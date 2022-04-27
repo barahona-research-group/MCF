@@ -89,7 +89,7 @@ if __name__ == "__main__":
     print("Storing results ...")
 
     results = {}
-    results["persistance"] = persistences
+    results["persistence"] = persistences
     results["bottleneck"] = bottleneck_distances
     results["wasserstein"] = wasserstein_distances
 
