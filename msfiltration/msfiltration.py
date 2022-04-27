@@ -34,6 +34,7 @@ class MSF:
         min_time=-1,
         max_time=1,
         n_time=50,
+        n_workers=4,
         constructor="continuous_normalized",
         with_postprocessing=True,
         with_ttprime=False,
@@ -50,6 +51,7 @@ class MSF:
             min_time=min_time,
             max_time=max_time,
             n_time=n_time,
+            n_workers=n_workers,
             with_postprocessing=with_postprocessing,
             with_ttprime=with_ttprime,
             with_optimal_scales=with_optimal_scales,
@@ -82,13 +84,14 @@ class MSF:
         min_time=-1,
         max_time=1,
         n_time=50,
+        n_workers=4,
         constructor="continuous_normalized",
         max_dim=4,
     ):
 
         # apply Markov Stability analysis
         self.markov_stability_analysis(
-            graph, min_time, max_time, n_time, constructor,
+            graph, min_time, max_time, n_time, n_workers, constructor,
         )
 
         # build filtration
@@ -103,12 +106,13 @@ class MSF:
         min_time=-1,
         max_time=1,
         n_time=50,
+        n_workers=4,
         constructor="continuous_normalized",
         max_dim=4,
     ):
 
         self.fit(
-            graph, min_time, max_time, n_time, constructor, max_dim,
+            graph, min_time, max_time, n_time, n_workers, constructor, max_dim,
         )
 
         self.transform()
@@ -193,6 +197,6 @@ class MSF:
             ax.legend()
 
         plt.show()
-        
+
         return ax
 
