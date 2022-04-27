@@ -1,29 +1,13 @@
 import gudhi as gd
 import itertools
+import matplotlib.pyplot as plt
 import numpy as np
 
 from pygenstability import run
 from skimage.feature import peak_local_max
 from tqdm import tqdm
 
-# from msfiltration.utils import node_id_to_dict
-
-
-def node_id_to_dict(node_id):
-    """
-    Input: Array of node_id's
-    Output: Dictionary that maps community number to node_keys
-    """
-    node_id = np.asarray(node_id)
-    node_keys = np.arange(len(node_id))
-    n_communities = np.max(node_id)
-    community_dict = {}
-    for i in range(n_communities + 1):
-        c = np.argwhere(node_id == i).flatten()
-        c_set = set(node_keys[j] for j in c)
-        if len(c) > 0:
-            community_dict[i] = c_set
-    return community_dict
+from msfiltration.utils import node_id_to_dict
 
 
 class MSF:
@@ -51,6 +35,9 @@ class MSF:
         max_time=1,
         n_time=50,
         constructor="continuous_normalized",
+        with_postprocessing=True,
+        with_ttprime=False,
+        with_optimal_scales=False,
     ):
 
         self.graph = graph
@@ -63,6 +50,9 @@ class MSF:
             min_time=min_time,
             max_time=max_time,
             n_time=n_time,
+            with_postprocessing=with_postprocessing,
+            with_ttprime=with_ttprime,
+            with_optimal_scales=with_optimal_scales,
         )
 
     def load_ms_results(self, ms_results):
@@ -123,7 +113,7 @@ class MSF:
 
         self.transform()
 
-    def select_scales(self, threshold_abs=0.2):
+    def select_scales(self, threshold_abs=0.2, plot=False):
 
         # get set of deaths
         deaths = np.asarray(
@@ -158,4 +148,51 @@ class MSF:
 
         # The optimal scales lie in the middle of the gaps
         self.optimal_scales = (np.array(left_gap) + np.array(right_gap)) // 2
+
+        if plot:
+
+            fig, ax = plt.subplots(1, figsize=(10, 5))
+            ax.plot(deaths, diff_deaths, label="Difference to successor")
+            ax.scatter(
+                deaths[local_max_ind],
+                diff_deaths[local_max_ind],
+                color="green",
+                label="Left gap",
+            )
+            ax.scatter(
+                deaths[local_max_ind + 1],
+                diff_deaths[local_max_ind + 1],
+                color="lightgreen",
+                label="Right gap",
+            )
+            ax.vlines(
+                self.log_times[self.optimal_scales],
+                0,
+                diff_deaths.max(),
+                color="gold",
+                label="Optimal scales",
+            )
+            ax.set(xlabel="Deaths", ylabel="Difference")
+            ax.legend()
+            plt.show()
+
+            return ax
+
+    def plot_persistence_diagram(self):
+
+        ax = gd.plot_persistence_diagram(self.persistence)
+
+        if len(self.optimal_scales) > 0:
+            ax.hlines(
+                self.log_times[self.optimal_scales],
+                self.log_times[0],
+                self.log_times[-1],
+                color="gold",
+                label="Optimal scales",
+            )
+            ax.legend()
+
+        plt.show()
+        
+        return ax
 
