@@ -26,9 +26,10 @@ from msfiltration.graph_sampling import multiscale_sbm
 if __name__ == "__main__":
 
     # Set MS parameters
-    n_time = 50
+    n_time = 200
     min_time = -1.5
     max_time = 0.5
+    n_workers = 10
 
     # initialise list of persistences
     persistences = []
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     # MSF persistence #
     ###################
 
-    n_realisations = 3
+    n_realisations = 100
     n_nodes = 270
     n_edges = 3450
 
@@ -54,7 +55,7 @@ if __name__ == "__main__":
         msf = MSF()
 
         # run MS analysis, build filtration and compute persistence
-        msf.fit_transform(A, min_time, max_time, n_time)
+        msf.fit_transform(A, min_time, max_time, n_time, n_workers)
 
         # add persistence of different dimensions to list
         persistences.append(
