@@ -96,9 +96,10 @@ if __name__ == "__main__":
     # storing resutls
     print("Storing results ...")
 
-    distances = {}
-    distances["bottleneck"] = bottleneck_distances
-    distances["wasserstein"] = wasserstein_distances
+    results = {}
+    results["persistance"] = persistences
+    results["bottleneck"] = bottleneck_distances
+    results["wasserstein"] = wasserstein_distances
 
     # get current time
     time = str(datetime.datetime.now().strftime("%m-%d_%H:%M"))
@@ -111,6 +112,6 @@ if __name__ == "__main__":
 
     with open(root + "stability_er_" + time + ".pkl", "wb") as handle:
         pickle.dump(
-            distances, handle, protocol=pickle.HIGHEST_PROTOCOL,
+            results, handle, protocol=pickle.HIGHEST_PROTOCOL,
         )
 
