@@ -8,7 +8,7 @@ import pickle
 import sys
 from pathlib import Path
 
-server = False
+server = True
 
 if server:
     module_path = str(Path.cwd().parents[0])
@@ -61,6 +61,10 @@ if __name__ == "__main__":
             [msf.filtration.persistence_intervals_in_dimension(dim) for dim in range(4)]
         )
 
+        # to test
+        msf.select_scales()
+        msf.plot_persistence_diagram()
+
     ########################################
     # bottleneck and Wasserstein distances #
     ########################################
@@ -88,9 +92,14 @@ if __name__ == "__main__":
                 )
                 wasserstein_distances[j, i, dim] = wasserstein_distances[i, j, dim]
 
+    # storing resutls
     print("Storing results ...")
 
-    # Get current time
+    distances = {}
+    distances["bottleneck"] = bottleneck_distances
+    distances["wasserstein"] = wasserstein_distances
+
+    # get current time
     time = str(datetime.datetime.now().strftime("%m-%d_%H:%M"))
 
     # store distances
@@ -101,8 +110,6 @@ if __name__ == "__main__":
 
     with open(root + "stability_er_" + time + ".pkl", "wb") as handle:
         pickle.dump(
-            [bottleneck_distances, wasserstein_distances],
-            handle,
-            protocol=pickle.HIGHEST_PROTOCOL,
+            distances, handle, protocol=pickle.HIGHEST_PROTOCOL,
         )
 
