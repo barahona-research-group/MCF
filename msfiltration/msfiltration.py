@@ -26,7 +26,10 @@ class MSF:
 
         # initialise persistent homology attributes
         self.persistence = None
+
+        # initial optimal scales attributes
         self.optimal_scales = None
+        self.gap_width = None
 
     def markov_stability_analysis(
         self,
@@ -70,8 +73,12 @@ class MSF:
         print("Building filtration ...")
         for t in tqdm(range(len(self.log_times))):
             for community in node_id_to_dict(self.community_ids[t]).values():
-                # only add simplices of dimension smaller than max_dim
-                for face in itertools.combinations(community, max_dim):
+                # compute size of community
+                s_community = len(community)
+                # cover community by max_dim-simplices when community is larger than max_dim
+                for face in itertools.combinations(
+                    community, min(max_dim, s_community)
+                ):
                     self.filtration.insert(list(face), filtration=self.log_times[t])
 
     def compute_persistence(self):
@@ -87,11 +94,22 @@ class MSF:
         n_workers=4,
         constructor="continuous_normalized",
         max_dim=4,
+        with_postprocessing=True,
+        with_ttprime=False,
+        with_optimal_scales=False,
     ):
 
         # apply Markov Stability analysis
         self.markov_stability_analysis(
-            graph, min_time, max_time, n_time, n_workers, constructor,
+            graph,
+            min_time,
+            max_time,
+            n_time,
+            n_workers,
+            constructor,
+            with_postprocessing,
+            with_ttprime,
+            with_optimal_scales,
         )
 
         # build filtration
@@ -109,15 +127,27 @@ class MSF:
         n_workers=4,
         constructor="continuous_normalized",
         max_dim=4,
+        with_postprocessing=True,
+        with_ttprime=False,
+        with_optimal_scales=False,
     ):
 
         self.fit(
-            graph, min_time, max_time, n_time, n_workers, constructor, max_dim,
+            graph,
+            min_time,
+            max_time,
+            n_time,
+            n_workers,
+            constructor,
+            max_dim,
+            with_postprocessing,
+            with_ttprime,
+            with_optimal_scales,
         )
 
         self.transform()
 
-    def select_scales(self, threshold_abs=0.2, plot=False):
+    def select_scales(self, threshold_abs=0.2, min_gap_width=0.2, with_plot=False):
 
         # get set of deaths
         deaths = np.asarray(
@@ -131,7 +161,7 @@ class MSF:
         deaths.sort()
 
         # Compute differences to next death time
-        diff_deaths = deaths[1:] - deaths[:-1]
+        diff_deaths = deaths[1:] - deaths[:-1]  ## Is this correct?
         diff_deaths = np.append(diff_deaths, 0)
 
         # Find local maxima
@@ -140,20 +170,31 @@ class MSF:
         ).flatten()
         local_max_ind.sort()
 
-        # Find indices of local max in log_times and of their succesors
-        left_gap = [
-            np.argwhere(self.log_times == deaths[local_max_ind[i]]).flatten()[0]
-            for i in range(len(local_max_ind))
-        ]
-        right_gap = [
-            np.argwhere(self.log_times == deaths[local_max_ind[i] + 1]).flatten()[0]
-            for i in range(len(local_max_ind))
-        ]
+        # compute gap width between max and succesor
+        self.gap_width = np.abs(deaths[local_max_ind] - deaths[local_max_ind + 1])
 
-        # The optimal scales lie in the middle of the gaps
-        self.optimal_scales = (np.array(left_gap) + np.array(right_gap)) // 2
+        # apply minimal gap width
+        local_max_ind = local_max_ind[self.gap_width > min_gap_width]
+        self.gap_width = self.gap_width[self.gap_width > min_gap_width]
 
-        if plot:
+        # find indices of local max in log_times and of their succesors
+        left_gap = np.asarray(
+            [
+                np.argwhere(self.log_times == deaths[local_max_ind[i]]).flatten()[0]
+                for i in range(len(local_max_ind))
+            ]
+        )
+        right_gap = np.asarray(
+            [
+                np.argwhere(self.log_times == deaths[local_max_ind[i] + 1]).flatten()[0]
+                for i in range(len(local_max_ind))
+            ]
+        )
+
+        # the optimal scales lie in the middle of the gaps
+        self.optimal_scales = (left_gap + right_gap) // 2
+
+        if with_plot:
 
             fig, ax = plt.subplots(1, figsize=(10, 5))
             ax.plot(deaths, diff_deaths, label="Difference to successor")
@@ -169,13 +210,16 @@ class MSF:
                 color="lightgreen",
                 label="Right gap",
             )
-            ax.vlines(
-                self.log_times[self.optimal_scales],
-                0,
-                diff_deaths.max(),
-                color="gold",
-                label="Optimal scales",
-            )
+
+            if len(self.optimal_scales) > 0:
+                ax.vlines(
+                    self.log_times[self.optimal_scales],
+                    0,
+                    diff_deaths.max(),
+                    color="gold",
+                    label="Optimal scales",
+                )
+
             ax.set(xlabel="Deaths", ylabel="Difference")
             ax.legend()
             plt.show()
@@ -189,8 +233,8 @@ class MSF:
         if len(self.optimal_scales) > 0:
             ax.hlines(
                 self.log_times[self.optimal_scales],
-                self.log_times[0],
-                self.log_times[-1],
+                self.log_times[0] - 1,
+                self.log_times[-1] + 1,
                 color="gold",
                 label="Optimal scales",
             )
