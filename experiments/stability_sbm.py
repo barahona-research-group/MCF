@@ -28,7 +28,7 @@ if __name__ == "__main__":
     n_time = 200
     min_time = -1.5
     max_time = 0.5
-    n_workers = 10
+    n_workers = 15
 
     # initialise list of ms results
     ms_results = []
