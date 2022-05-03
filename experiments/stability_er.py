@@ -76,10 +76,6 @@ if __name__ == "__main__":
             [msf.filtration.persistence_intervals_in_dimension(dim) for dim in range(4)]
         )
 
-        # to test
-        msf.select_scales()
-        msf.plot_persistence_diagram()
-
     ########################################
     # bottleneck and Wasserstein distances #
     ########################################
