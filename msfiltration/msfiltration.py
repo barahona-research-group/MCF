@@ -69,10 +69,29 @@ class MSF:
         # get log_times
         self.log_times = np.log10(self.ms_results["times"])
 
-        # add communities at scale t as simplices to tree
+        # store all communities
+        all_communities = set()
+
         print("Building filtration ...")
         for t in tqdm(range(len(self.log_times))):
+
+            # continue if partition at scale t has appeared before
+            is_repetition = False
+            for s in range(t - 1, -1, -1):
+                if np.array_equal(self.community_ids[s], self.community_ids[t]):
+                    is_repetition = True
+                    break
+            if is_repetition:
+                continue
+
+            # add communities at scale t as simplices to tree
             for community in node_id_to_dict(self.community_ids[t]).values():
+                # continue if community has been added before
+                if community in all_communities:
+                    continue
+                # add community to set of all communities
+                else:
+                    all_communities.add(community)
                 # compute size of community
                 s_community = len(community)
                 # cover community by max_dim-simplices when community is larger than max_dim
