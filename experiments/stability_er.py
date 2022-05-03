@@ -58,7 +58,15 @@ if __name__ == "__main__":
         msf = MSF()
 
         # run MS analysis, build filtration and compute persistence
-        msf.fit_transform(A, min_time, max_time, n_time, n_workers)
+        msf.fit_transform(
+            A,
+            min_time,
+            max_time,
+            n_time,
+            n_workers,
+            with_ttprime=True,
+            with_optimal_scales=True,
+        )
 
         # add MS results to list
         ms_results.append(msf.ms_results)
@@ -103,7 +111,7 @@ if __name__ == "__main__":
     print("Storing results ...")
 
     results = {}
-    results['ms_results'] = ms_results
+    results["ms_results"] = ms_results
     results["persistence"] = persistences
     results["bottleneck"] = bottleneck_distances
     results["wasserstein"] = wasserstein_distances
