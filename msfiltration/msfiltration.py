@@ -1,5 +1,6 @@
 import gudhi as gd
 import itertools
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -25,6 +26,7 @@ class MSF:
         self.log_times = None
 
         # initialise persistent homology attributes
+        self.max_dim = None
         self.persistence = None
 
         # initial optimal scales attributes
@@ -64,6 +66,8 @@ class MSF:
         self.ms_results = ms_results
 
     def build_filtration(self, max_dim=4):
+        # define max_dim of filtration
+        self.max_dim = max_dim
         # get community assignments
         self.community_ids = self.ms_results["community_id"]
         # get log_times
@@ -96,7 +100,7 @@ class MSF:
                 s_community = len(community)
                 # cover community by max_dim-simplices when community is larger than max_dim
                 for face in itertools.combinations(
-                    community, min(max_dim, s_community)
+                    community, min(self.max_dim, s_community)
                 ):
                     self.filtration.insert(list(face), filtration=self.log_times[t])
 
@@ -245,10 +249,82 @@ class MSF:
 
             return ax
 
-    def plot_persistence_diagram(self):
+    def plot_persistence_diagram(self, alpha=0.5):
+        """
+        code is a modified version of the GUDHI's plot_persistence_diagram
+        """
 
-        ax = gd.plot_persistence_diagram(self.persistence)
+        # obtain min and max values and define value for infinity
+        tmin = self.log_times[0]
+        tmax = self.log_times[-1]
+        delta = 0.1 * abs(tmax - tmin)
+        infinity = tmax + delta
 
+        # font size
+        plt.rcParams.update({"font.size": 15})
+
+        # create axis
+        fig, ax = plt.subplots(1, figsize=(8, 7))
+
+        # define colormap
+        colormap = plt.cm.Set1.colors
+
+        # infinity line
+        ax.plot(
+            [tmin - 0.5 * delta, tmax],
+            [infinity, infinity],
+            linewidth=1.0,
+            color="k",
+            alpha=0.5,
+        )
+
+        # plot persistences
+        for dim in range(self.max_dim - 1):
+            persistences = self.filtration.persistence_intervals_in_dimension(dim)
+            if len(persistences) > 0:
+                ax.scatter(
+                    persistences[:, 0],
+                    np.nan_to_num(persistences[:, 1], posinf=infinity),
+                    color=colormap[dim],
+                    alpha=alpha,
+                    label="{}-dim".format(dim),
+                )
+
+        # plot top line
+        ax.plot([tmin - 0.5 * delta, tmax], [tmax, tmax], linewidth=1.0, color="k")
+
+        # plot diag
+        ax.plot([tmin, tmax], [tmin, tmax], linewidth=1.0, color="k")
+
+        # plot lower diag patch
+        ax.add_patch(
+            mpatches.Polygon(
+                [[tmin, tmin], [tmax, tmin], [tmax, tmax]], fill=True, color="lightgrey"
+            )
+        )
+
+        # labels and axes limits
+        ax.set(
+            xlabel="Birth",
+            ylabel="Death",
+            xlim=(tmin - 0.5 * delta, tmax),
+            ylim=(tmin, infinity + 0.5 * delta),
+        )
+
+        # Infinity and y-axis label
+        yt = ax.get_yticks()
+        yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
+        yt = np.append(yt, infinity)
+        ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
+        ytl[-1] = r"$+\infty$"
+        ax.set_yticks(yt)
+        ax.set_yticklabels(ytl)
+
+        # x-axis label
+        ax.set_xticks(yt[:-1])
+        ax.set_xticklabels(ytl[:-1])
+
+        # plot optimal scales
         if len(self.optimal_scales) > 0:
             ax.hlines(
                 self.log_times[self.optimal_scales],
@@ -257,9 +333,7 @@ class MSF:
                 color="gold",
                 label="Optimal scales",
             )
-            ax.legend()
-
-        plt.show()
+            ax.legend(loc=4)
 
         return ax
 
