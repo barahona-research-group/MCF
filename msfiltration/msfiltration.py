@@ -287,7 +287,7 @@ class MSF:
                     np.nan_to_num(persistences[:, 1], posinf=infinity),
                     color=colormap[dim],
                     alpha=alpha,
-                    label="{}-dim".format(dim),
+                    label=r"$H_{}$".format(dim),
                 )
 
         # plot top line
