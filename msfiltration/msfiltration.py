@@ -8,6 +8,7 @@ from pygenstability import run
 from skimage.feature import peak_local_max
 from tqdm import tqdm
 
+from msfiltration.scale_selection import select_scales_gaps
 from msfiltration.utils import node_id_to_dict
 
 
@@ -30,7 +31,7 @@ class MSF:
         self.persistence = None
 
         # initial optimal scales attributes
-        self.optimal_scales = None
+        self.optimal_scales = []
         self.gap_width = None
 
     def markov_stability_analysis(
@@ -45,7 +46,7 @@ class MSF:
         with_ttprime=False,
         with_optimal_scales=False,
     ):
-
+        # store graph as attribute
         self.graph = graph
 
         # apply Markov Stability analysis
@@ -62,18 +63,27 @@ class MSF:
             with_optimal_scales=with_optimal_scales,
         )
 
-    def load_ms_results(self, ms_results):
-        self.ms_results = ms_results
-
-    def build_filtration(self, max_dim=4):
-        # define max_dim of filtration
-        self.max_dim = max_dim
         # get community assignments
         self.community_ids = self.ms_results["community_id"]
         # get log_times
         self.log_times = np.log10(self.ms_results["times"])
 
-        # store all communities
+    def load_ms_results(self, ms_results):
+        # store MS results as attribute
+        self.ms_results = ms_results
+        # get community assignments
+        self.community_ids = self.ms_results["community_id"]
+        # get log_times
+        self.log_times = np.log10(self.ms_results["times"])
+
+    def build_filtration(self, max_dim=4):
+        """
+        The filtration is built from the community assignments stored in self.community_ids
+        """
+        # define max_dim of filtration
+        self.max_dim = max_dim
+
+        # store all communities to later avoid repetitious computations
         all_communities = set()
 
         print("Building filtration ...")
@@ -176,78 +186,20 @@ class MSF:
         deaths = np.asarray(
             [self.persistence[i][1][1] for i in range(len(self.persistence))]
         )
-        # drop duplicates
-        deaths = np.unique(deaths)
-        # replace inf with max time
-        deaths[deaths == np.inf] = self.log_times[-1]
-        # sort
-        deaths.sort()
-
-        # Compute differences to next death time
-        diff_deaths = deaths[1:] - deaths[:-1]  ## Is this correct?
-        diff_deaths = np.append(diff_deaths, 0)
-
-        # Find local maxima
-        local_max_ind = peak_local_max(
-            diff_deaths, threshold_abs=threshold_abs
-        ).flatten()
-        local_max_ind.sort()
-
-        # compute gap width between max and succesor
-        self.gap_width = np.abs(deaths[local_max_ind] - deaths[local_max_ind + 1])
-
-        # apply minimal gap width
-        local_max_ind = local_max_ind[self.gap_width > min_gap_width]
-        self.gap_width = self.gap_width[self.gap_width > min_gap_width]
-
-        # find indices of local max in log_times and of their succesors
-        left_gap = np.asarray(
-            [
-                np.argwhere(self.log_times == deaths[local_max_ind[i]]).flatten()[0]
-                for i in range(len(local_max_ind))
-            ]
-        )
-        right_gap = np.asarray(
-            [
-                np.argwhere(self.log_times == deaths[local_max_ind[i] + 1]).flatten()[0]
-                for i in range(len(local_max_ind))
-            ]
-        )
-
-        # the optimal scales lie in the middle of the gaps
-        self.optimal_scales = (left_gap + right_gap) // 2
 
         if with_plot:
 
-            fig, ax = plt.subplots(1, figsize=(10, 5))
-            ax.plot(deaths, diff_deaths, label="Difference to successor")
-            ax.scatter(
-                deaths[local_max_ind],
-                diff_deaths[local_max_ind],
-                color="green",
-                label="Left gap",
+            self.optimal_scales, self.gap_width, ax = select_scales_gaps(
+                deaths, self.log_times, threshold_abs, min_gap_width, True
             )
-            ax.scatter(
-                deaths[local_max_ind + 1],
-                diff_deaths[local_max_ind + 1],
-                color="lightgreen",
-                label="Right gap",
-            )
-
-            if len(self.optimal_scales) > 0:
-                ax.vlines(
-                    self.log_times[self.optimal_scales],
-                    0,
-                    diff_deaths.max(),
-                    color="gold",
-                    label="Optimal scales",
-                )
-
-            ax.set(xlabel="Deaths", ylabel="Difference")
-            ax.legend()
-            plt.show()
 
             return ax
+
+        else:
+
+            self.optimal_scales, self.gap_width = select_scales_gaps(
+                deaths, self.log_times, threshold_abs, min_gap_width, False
+            )
 
     def plot_persistence_diagram(self, alpha=0.5):
         """
@@ -333,7 +285,8 @@ class MSF:
                 color="gold",
                 label="Optimal scales",
             )
-            ax.legend(loc=4)
+
+        ax.legend(loc=4)
 
         return ax
 

@@ -2,6 +2,7 @@
 *.pdf
 *.svg
 *.png
+*.jpeg
 ./figures
 
 # Byte-compiled / optimized / DLL files
