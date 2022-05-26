@@ -1,10 +1,57 @@
+import gudhi as gd
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
 from skimage.feature import peak_local_max
 
+from msfiltration import MSF
 from msfiltration.scale_selection import select_scales_gaps
+
+
+def msf_bootstrap(community_ids, log_times, n_sample, B=20, seed=0):
+
+    # obtain number of nodes
+    n_nodes = len(community_ids[0])
+
+    # define array of nodes
+    nodes = np.arange(n_nodes)
+
+    # initialise random number generator
+    rng = np.random.RandomState(seed)
+
+    # store persistences for different samples
+    persistences = []
+
+    for _ in range(B):
+
+        # sample nodes
+        nodes_sample = rng.choice(nodes, n_sample)
+        nodes_sample.sort()
+
+        # obtain all community assignments for sampled nodes
+        community_ids_sampled = []
+        for partition in community_ids:
+            community_ids_sampled.append(partition[nodes_sample])
+
+        # initialise new MSF object for sample
+        msf_sample = MSF()
+        msf_sample.community_ids = community_ids_sampled
+        msf_sample.log_times = log_times
+
+        # compute PD for sample
+        msf_sample.build_filtration()
+        msf_sample.compute_persistence()
+
+        # add persistence of different dimensions to list
+        persistences.append(
+            [
+                msf_sample.filtration.persistence_intervals_in_dimension(dim)
+                for dim in range(4)
+            ]
+        )
+
+    return persistences
 
 
 def select_scales_pds(
@@ -37,7 +84,6 @@ def select_scales_pds(
         )
 
         return optimal_scales, gap_width
-
 
 
 def plot_pds(all_persistences, log_times, optimal_scales=[], alpha=0.1):
