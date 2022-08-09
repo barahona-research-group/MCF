@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scipy.signal import find_peaks
 from skimage.feature import peak_local_max
 
 
@@ -83,3 +84,92 @@ def select_scales_gaps(
         return optimal_scales, gap_width, ax
     else:
         return optimal_scales, gap_width
+
+
+def select_scales_density(
+    death_count,
+    birth_count,
+    min_death_count=1,
+    max_birth_count=1,
+    log_times=[],
+    with_plot=False,
+):
+
+    # compute death density
+    death_total = np.sum(death_count)
+    death_density = death_count / death_total
+
+    # compute birth density
+    birth_total = np.sum(birth_count)
+    birth_density = birth_count / birth_total
+
+    # PARAM1: define min height of peaks
+    min_death_density = min_death_count / death_total
+
+    # find peaks with height above threshold
+    death_peaks, _ = find_peaks(death_density, height=min_death_density)
+
+    # the last peak is selected
+    selected_scales = [death_peaks[-1]]
+
+    for i in range(len(death_peaks) - 1, -1, -1):
+        # only add the previous peak if it is not a direct neighbour
+        if selected_scales[-1] - death_peaks[i] > 1:
+            selected_scales.append(death_peaks[i])
+
+    selected_scales = np.sort(np.asarray(selected_scales))
+
+    # PARAM 2: define tolerance for birth density
+    max_birth_density = max_birth_count / birth_total
+
+    # remove scales that have birth density above threshold
+    selected_scales = selected_scales[
+        birth_density[selected_scales] <= max_birth_density
+    ]
+
+    # find all death peaks
+    death_peaks_all, _ = find_peaks(death_density, height=0)
+
+    # as long as birth density is not above threshold, move peaks to right
+    for i, s in enumerate(selected_scales):
+
+        # compute first index to the right of s such that birth density bigger than threshold
+        ind_no_birth = s + np.argmax(birth_density[s:] > max_birth_density)
+
+        # obtain largest peak such that birth density is smaller than threshold
+        if ind_no_birth > s:
+            s_new = np.max(death_peaks_all[death_peaks_all < ind_no_birth])
+            # replace peaks
+            selected_scales[i] = s_new
+
+    selected_scales = np.unique(selected_scales)
+
+    if with_plot:
+        if len(log_times) == 0:
+            log_times = np.arange(len(death_count))
+        fig, ax = plt.subplots(1, figsize=(10, 5))
+        ax.plot(
+            log_times[1:],
+            birth_density[1:-1],
+            ls="-",
+            alpha=0.7,
+            label="Birth density",
+            color="C1",
+        )
+        ax.plot(log_times[1:], death_density[1:-1], label="Death density")
+        ax.plot(
+            log_times[selected_scales],
+            death_density[selected_scales],
+            "x",
+            label="Selected scale",
+            color="gold",
+        )
+        ax.set(xlabel=r"$\log(t)$", ylabel="density")
+        ax.legend()
+        plt.show()
+
+        return selected_scales, ax
+
+    else:
+        return selected_scales
+

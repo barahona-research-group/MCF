@@ -25,6 +25,7 @@ class MSF:
         self.ms_results = None
         self.community_ids = None
         self.log_times = None
+        self.n_times = None
 
         # initialise persistent homology attributes
         self.max_dim = None
@@ -67,6 +68,8 @@ class MSF:
         self.community_ids = self.ms_results["community_id"]
         # get log_times
         self.log_times = np.log10(self.ms_results["times"])
+        # get number of times
+        self.n_times = len(self.log_times)
 
     def load_ms_results(self, ms_results):
         # store MS results as attribute
@@ -75,6 +78,8 @@ class MSF:
         self.community_ids = self.ms_results["community_id"]
         # get log_times
         self.log_times = np.log10(self.ms_results["times"])
+        # get number of times
+        self.n_times = len(self.log_times)
 
     def build_filtration(self, max_dim=4):
         """
