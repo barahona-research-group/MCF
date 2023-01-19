@@ -218,7 +218,7 @@ class MSF:
         infinity = tmax + delta
 
         # font size
-        plt.rcParams.update({"font.size": 15})
+        # plt.rcParams.update({"font.size": 20})
 
         # create axis
         fig, ax = plt.subplots(1, figsize=(8, 7))

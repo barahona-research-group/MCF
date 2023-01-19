@@ -101,7 +101,7 @@ def plot_pds(all_persistences, log_times, optimal_scales=[], alpha=0.1):
     infinity = tmax + delta
 
     # font size
-    plt.rcParams.update({"font.size": 15})
+    # plt.rcParams.update({"font.size": 15})
 
     # create axis
     fig, ax = plt.subplots(1, figsize=(8, 7))
