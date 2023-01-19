@@ -8,14 +8,14 @@ def compute_death_count(msf, dim):
     all_deaths = msf.filtration.persistence_intervals_in_dimension(dim)[:, 1]
 
     # initialise death density array where the last entry corresponds to inf
-    death_count = np.zeros(msf.n_times + 1)
+    death_count = np.zeros(msf.n_scales + 1)
 
     # count deaths for each scale
-    for i in range(msf.n_times):
-        death_count[i] = np.sum(all_deaths == msf.log_times[i])
+    for i in range(msf.n_scales):
+        death_count[i] = np.sum(all_deaths == msf.log_scales[i])
 
     # count inf
-    death_count[msf.n_times] = np.sum(all_deaths == np.Inf)
+    death_count[msf.n_scales] = np.sum(all_deaths == np.Inf)
 
     return death_count
 
@@ -26,14 +26,14 @@ def compute_birth_count(msf, dim):
     all_births = msf.filtration.persistence_intervals_in_dimension(dim)[:, 0]
 
     # initialise death density array where the last entry corresponds to inf
-    birth_count = np.zeros(msf.n_times + 1)
+    birth_count = np.zeros(msf.n_scales + 1)
 
     # count deaths for each scale
-    for i in range(msf.n_times):
-        birth_count[i] = np.sum(all_births == msf.log_times[i])
+    for i in range(msf.n_scales):
+        birth_count[i] = np.sum(all_births == msf.log_scales[i])
 
     # count inf
-    birth_count[msf.n_times] = np.sum(all_births == np.Inf)
+    birth_count[msf.n_scales] = np.sum(all_births == np.Inf)
 
     return birth_count
 
@@ -41,7 +41,7 @@ def compute_birth_count(msf, dim):
 def compute_combined_death_count(msf, dimensions):
 
     # initialise combined death density array where the last entry corresponds to inf
-    combined_death_count = np.zeros(msf.n_times + 1)
+    combined_death_count = np.zeros(msf.n_scales + 1)
 
     # sum of densities for different dimensions
     for dim in dimensions:
@@ -54,7 +54,7 @@ def compute_combined_death_count(msf, dimensions):
 def compute_combined_birth_count(msf, dimensions):
 
     # initialise combined death density array where the last entry corresponds to inf
-    combined_birth_count = np.zeros(msf.n_times + 1)
+    combined_birth_count = np.zeros(msf.n_scales + 1)
 
     # sum of densities for different dimensions
     for dim in dimensions:
@@ -67,7 +67,7 @@ def compute_combined_birth_count(msf, dimensions):
 def compute_rank(msf):
     # compute rank of partition matrix
     return np.asarray(
-        [len(np.unique(msf.community_ids[i])) for i in range(msf.n_times)]
+        [len(np.unique(msf.community_ids[i])) for i in range(msf.n_scales)]
     )
 
 

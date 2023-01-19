@@ -24,8 +24,8 @@ class MSF:
         # initialise Markov Stabiliy attributes
         self.ms_results = None
         self.community_ids = None
-        self.log_times = None
-        self.n_times = None
+        self.log_scales = None
+        self.n_scales = None
 
         # initialise persistent homology attributes
         self.max_dim = None
@@ -38,9 +38,9 @@ class MSF:
     def markov_stability_analysis(
         self,
         graph,
-        min_time=-1,
-        max_time=1,
-        n_time=50,
+        min_scale=-1,
+        max_scale=1,
+        n_scale=50,
         n_workers=4,
         constructor="continuous_normalized",
         with_postprocessing=True,
@@ -55,9 +55,9 @@ class MSF:
         self.ms_results = run(
             self.graph,
             constructor=constructor,
-            min_time=min_time,
-            max_time=max_time,
-            n_time=n_time,
+            min_scale=min_scale,
+            max_scale=max_scale,
+            n_scale=n_scale,
             n_workers=n_workers,
             with_postprocessing=with_postprocessing,
             with_ttprime=with_ttprime,
@@ -66,20 +66,20 @@ class MSF:
 
         # get community assignments
         self.community_ids = self.ms_results["community_id"]
-        # get log_times
-        self.log_times = np.log10(self.ms_results["times"])
-        # get number of times
-        self.n_times = len(self.log_times)
+        # get log_scales
+        self.log_scales = np.log10(self.ms_results["scales"])
+        # get number of scales
+        self.n_scales = len(self.log_scales)
 
     def load_ms_results(self, ms_results):
         # store MS results as attribute
         self.ms_results = ms_results
         # get community assignments
         self.community_ids = self.ms_results["community_id"]
-        # get log_times
-        self.log_times = np.log10(self.ms_results["times"])
-        # get number of times
-        self.n_times = len(self.log_times)
+        # get log_scales
+        self.log_scales = np.log10(self.ms_results["scales"])
+        # get number of scales
+        self.n_scales = len(self.log_scales)
 
     def build_filtration(self, max_dim=4):
         """
@@ -92,7 +92,7 @@ class MSF:
         all_communities = set()
 
         print("Building filtration ...")
-        for t in tqdm(range(len(self.log_times))):
+        for t in tqdm(range(len(self.log_scales))):
 
             # continue if partition at scale t has appeared before
             is_repetition = False
@@ -117,7 +117,7 @@ class MSF:
                 for face in itertools.combinations(
                     community, min(self.max_dim, s_community)
                 ):
-                    self.filtration.insert(list(face), filtration=self.log_times[t])
+                    self.filtration.insert(list(face), filtration=self.log_scales[t])
 
     def compute_persistence(self):
         print("Computing persistence ... ")
@@ -126,9 +126,9 @@ class MSF:
     def fit(
         self,
         graph,
-        min_time=-1,
-        max_time=1,
-        n_time=50,
+        min_scale=-1,
+        max_scale=1,
+        n_scale=50,
         n_workers=4,
         constructor="continuous_normalized",
         max_dim=4,
@@ -140,9 +140,9 @@ class MSF:
         # apply Markov Stability analysis
         self.markov_stability_analysis(
             graph,
-            min_time,
-            max_time,
-            n_time,
+            min_scale,
+            max_scale,
+            n_scale,
             n_workers,
             constructor,
             with_postprocessing,
@@ -159,9 +159,9 @@ class MSF:
     def fit_transform(
         self,
         graph,
-        min_time=-1,
-        max_time=1,
-        n_time=50,
+        min_scale=-1,
+        max_scale=1,
+        n_scale=50,
         n_workers=4,
         constructor="continuous_normalized",
         max_dim=4,
@@ -172,9 +172,9 @@ class MSF:
 
         self.fit(
             graph,
-            min_time,
-            max_time,
-            n_time,
+            min_scale,
+            max_scale,
+            n_scale,
             n_workers,
             constructor,
             max_dim,
@@ -195,7 +195,7 @@ class MSF:
         if with_plot:
 
             self.optimal_scales, self.gap_width, ax = select_scales_gaps(
-                deaths, self.log_times, threshold_abs, min_gap_width, True
+                deaths, self.log_scales, threshold_abs, min_gap_width, True
             )
 
             return ax
@@ -203,7 +203,7 @@ class MSF:
         else:
 
             self.optimal_scales, self.gap_width = select_scales_gaps(
-                deaths, self.log_times, threshold_abs, min_gap_width, False
+                deaths, self.log_scales, threshold_abs, min_gap_width, False
             )
 
     def plot_persistence_diagram(self, alpha=0.5):
@@ -212,8 +212,8 @@ class MSF:
         """
 
         # obtain min and max values and define value for infinity
-        tmin = self.log_times[0]
-        tmax = self.log_times[-1]
+        tmin = self.log_scales[0]
+        tmax = self.log_scales[-1]
         delta = 0.1 * abs(tmax - tmin)
         infinity = tmax + delta
 
@@ -284,9 +284,9 @@ class MSF:
         # plot optimal scales
         if len(self.optimal_scales) > 0:
             ax.hlines(
-                self.log_times[self.optimal_scales],
-                self.log_times[0] - 1,
-                self.log_times[-1] + 1,
+                self.log_scales[self.optimal_scales],
+                self.log_scales[0] - 1,
+                self.log_scales[-1] + 1,
                 color="gold",
                 label="Optimal scales",
             )
