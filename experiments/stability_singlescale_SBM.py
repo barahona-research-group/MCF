@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     n_realisations = 100
     n_nodes = 270
-    sizes = [int(n / 3), int(n / 3), int(n / 3)]
+    sizes = [int(n_nodes / 3), int(n_nodes / 3), int(n_nodes / 3)]
     probs = [[0.25, 0.02, 0.01], [0.02, 0.25, 0.02], [0.01, 0.02, 0.3]]
 
     # compute persistence for different realisations
