@@ -20,7 +20,7 @@ else:
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from msfiltration import MSF
+from msfiltration import MCF
 from msfiltration.graph_sampling import multiscale_sbm
 
 if __name__ == "__main__":
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         A = nx.adjacency_matrix(G).toarray()
 
         # initialise MSF object
-        msf = MSF()
+        msf = MCF()
 
         # run MS analysis, build filtration and compute persistence
         msf.fit_transform(

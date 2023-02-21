@@ -5,7 +5,7 @@ import numpy as np
 
 from skimage.feature import peak_local_max
 
-from msfiltration import MSF
+from msfiltration import MCF
 from msfiltration.scale_selection import select_scales_gaps
 
 
@@ -35,8 +35,8 @@ def msf_bootstrap(community_ids, log_times, n_sample, B=20, seed=0):
             community_ids_sampled.append(partition[nodes_sample])
 
         # initialise new MSF object for sample
-        msf_sample = MSF()
-        msf_sample.community_ids = community_ids_sampled
+        msf_sample = MCF()
+        msf_sample.partitions = community_ids_sampled
         msf_sample.log_times = log_times
 
         # compute PD for sample

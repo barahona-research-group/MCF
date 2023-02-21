@@ -20,7 +20,7 @@ else:
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from msfiltration import MSF
+from msfiltration import MCF
 from msfiltration.graph_sampling import multiscale_sbm
 from msfiltration.msf_bootstrapping import msf_bootstrap
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         A = multiscale_sbm(seed=i)
 
         # initialise MSF object
-        msf = MSF()
+        msf = MCF()
 
         # run MS analysis
         msf.markov_stability_analysis(
@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
         # bootstrap MSF to compute persistent homology
         persistences_bootstrapped = msf_bootstrap(
-            msf.community_ids, msf.log_times, 100, 20, seed=i
+            msf.partitions, msf.log_times, 100, 20, seed=i
         )
 
         # add persistence of different dimensions to list
