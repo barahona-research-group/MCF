@@ -6,6 +6,9 @@
 ./figures
 *.html
 
+# Directories
+./notebooks
+
 # Unspecified results
 **/results.pkl
 

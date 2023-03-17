@@ -36,6 +36,13 @@ class MCF:
         self.optimal_scales = []
         self.gap_width = None
 
+    def load_data(self, partitions, filtration_indices=[]):
+        """
+        Method to load partitions and filtration indices
+        """
+        self.partitions = partitions
+        self.filtration_indices = filtration_indices
+
     def load_julia(self):
         """
         Method to load Julia code

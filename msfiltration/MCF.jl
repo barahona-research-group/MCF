@@ -1,5 +1,6 @@
 using Combinatorics
 using Eirene
+using ProgressBars
 
 
 # """ TODO: uncommenting leads to error
@@ -14,6 +15,8 @@ using Eirene
 # [^1]: Preprint incoming
 # """
 function Construct_MCF(partitions=Vector{Vector{Int64}}(), filtration_indices=Vector{Float64}(), max_dim=3)
+
+    println("Start Julia Code ... ")
 
     ##############
     # initialise #
@@ -61,8 +64,10 @@ function Construct_MCF(partitions=Vector{Vector{Int64}}(), filtration_indices=Ve
     # obtain simplices #
     ####################
 
-    # iterate over all partitions
-    for m in range(1, n_partitions)
+    println("Obtain simplices ... ")
+
+    # iterate over all partitions #TODO include tqdm
+    for m in ProgressBar(1:n_partitions)
 
         # get cluster id's and number of clusters
         cluster_id = partitions[m]
@@ -102,6 +107,8 @@ function Construct_MCF(partitions=Vector{Vector{Int64}}(), filtration_indices=Ve
     ###########################
     # compute boundary matrix #
     ###########################
+
+    println("Compute boundary matrix ... ")
 
     # compute number of simplices per dimension
     n_simplices_dim = [size(zero_simplices)[1], size(one_simplices)[1], size(two_simplices)[1], size(three_simplices)[1]]

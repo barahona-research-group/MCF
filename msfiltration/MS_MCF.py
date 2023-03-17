@@ -35,6 +35,7 @@ class MS_MCF(MCF):
         with_postprocessing=True,
         with_ttprime=False,
         with_optimal_scales=False,
+        exp_comp_mode="expm",
     ):
         # store graph as attribute
         self.graph = graph
@@ -51,6 +52,7 @@ class MS_MCF(MCF):
             with_postprocessing=with_postprocessing,
             with_ttprime=with_ttprime,
             with_optimal_scales=with_optimal_scales,
+            exp_comp_mode=exp_comp_mode,
         )
 
         # get community assignments
@@ -82,6 +84,7 @@ class MS_MCF(MCF):
         with_postprocessing=True,
         with_ttprime=False,
         with_optimal_scales=False,
+        exp_comp_mode="expm",
     ):
 
         # apply Markov Stability analysis
@@ -95,6 +98,7 @@ class MS_MCF(MCF):
             with_postprocessing,
             with_ttprime,
             with_optimal_scales,
+            exp_comp_mode,
         )
 
         # build filtration
@@ -115,6 +119,7 @@ class MS_MCF(MCF):
         with_postprocessing=True,
         with_ttprime=False,
         with_optimal_scales=False,
+        exp_comp_mode="expm",
     ):
 
         self.fit(
@@ -128,6 +133,7 @@ class MS_MCF(MCF):
             with_postprocessing,
             with_ttprime,
             with_optimal_scales,
+            exp_comp_mode,
         )
 
         self.transform()
