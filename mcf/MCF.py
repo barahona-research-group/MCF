@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pygenstability import run
-from skimage.feature import peak_local_max
+
+# from skimage.feature import peak_local_max
 from tqdm import tqdm
 
 from msfiltration.scale_selection import select_scales_gaps
@@ -41,7 +42,17 @@ class MCF:
         Method to load partitions and filtration indices
         """
         self.partitions = partitions
+        self.n_partitions = len(partitions)
         self.filtration_indices = filtration_indices
+
+    def load_ms_results(self, ms_results):
+        """Method to directly load results from PyGenStability"""
+        # get community assignments
+        self.partitions = self.ms_results["community_id"]
+        # get log_scales
+        self.filtration_indices = np.log10(self.ms_results["scales"])
+        # get number of scales
+        self.n_partitions = len(self.filtration_indices)
 
     def load_julia(self):
         """
@@ -114,7 +125,7 @@ class MCF:
                 s_community = len(community)
                 # cover community by max_dim-simplices when community is larger than max_dim
                 for face in itertools.combinations(
-                    community, min(self.max_dim, s_community)
+                    community, min(self.max_dim + 1, s_community)
                 ):
                     self.filtration_gudhi.insert(
                         list(face), filtration=self.filtration_indices[t]
@@ -155,7 +166,7 @@ class MCF:
 
         # summarise persistence
         self.persistence = []
-        for i in range(self.max_dim - 1):
+        for i in range(self.max_dim):
             PD = self.filtration_gudhi.persistence_intervals_in_dimension(i)
             self.persistence.append(PD)
 
