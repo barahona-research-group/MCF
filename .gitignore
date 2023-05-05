@@ -3,12 +3,12 @@
 *.svg
 *.png
 *.jpeg
-./figures
+figures/
 *.html
 
 # Directories
-./notebooks
-./experiments
+notebooks/
+experiments/
 
 # Unspecified results
 **/results.pkl
