@@ -68,18 +68,11 @@ def compute_partition_size(mcf):
     )
 
 
-def compute_beta_0(mcf):
-    # compute beta_0
-    death_count_0 = compute_death_count(mcf, 0)
-    return np.sum(death_count_0) - np.cumsum(death_count_0[:-1])  # CORRECT?
-
-
 def compute_persistent_hierarchy(mcf):
-    return compute_beta_0(mcf) / compute_partition_size(mcf)
+    # return compute_beta_0(mcf) / compute_partition_size(mcf)
+    pass
 
 
-def compute_persistent_conflict(mcf, dim):
-    n_conflicts = np.cumsum(compute_birth_count(mcf, dim))
-    n_resolved_conflicts = np.cumsum(compute_death_count(mcf, dim)[:-1])
-    return (n_conflicts - n_resolved_conflicts) / np.maximum(n_conflicts, 1)
+def compute_total_persistent_conflict(mcf, dim):
+    pass
 

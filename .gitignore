@@ -8,6 +8,7 @@
 
 # Directories
 ./notebooks
+./experiments
 
 # Unspecified results
 **/results.pkl
