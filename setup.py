@@ -5,7 +5,7 @@ from setuptools import setup
 __version__ = "0.0.1"
 
 setup(
-    name="MCF.py",
+    name="MCF",
     version=__version__,
     author="Dominik Schindler",
     install_requires=["numpy>=1.18.1", "gudhi>=3.7.1"],

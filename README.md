@@ -1,13 +1,20 @@
 # MCF: Multiscale Clustering Filtration
 
-Code for the paper "Measuring hierarchy and conflict in multiscale clustering with persistent homology" by Dominik J Schindler and Mauricio Barahona.
+Code for the paper "Persistent Homology of the Multiscale Clustering Filtration" by Dominik J. Schindler and Mauricio Barahona.
 
 ## Cite
 
 Please cite our paper if you use this code in your own work:
 
 ```
-preprint incoming
+@article{schindlerPersistentHomologyMultiscale2023,
+  author = {Schindler, Dominik J. and Barahona, Mauricio},
+  title = {Persistent Homology of the Multiscale Clustering Filtration},
+  publisher = {arXiv},
+  year = {2023},
+  doi = {10.48550/arXiv.2305.04281},
+  url = {http://arxiv.org/abs/2305.04281},
+}
 ```
 
 ## Licence
