@@ -1,6 +1,6 @@
 # MCF: Multiscale Clustering Filtration
 
-Code for the paper "Persistent Homology of the Multiscale Clustering Filtration" by Dominik J. Schindler and Mauricio Barahona.
+Code for the paper "Persistent Homology of the Multiscale Clustering Filtration" by Dominik J. Schindler and Mauricio Barahona: https://arxiv.org/abs/2305.04281
 
 ## Cite
 
