@@ -41,7 +41,7 @@ if __name__ == "__main__":
     n_scale = 200
     min_scale = -1.5
     max_scale = 0.5
-    n_workers = 15
+    n_workers = 20
 
     # initialise lists of results
     ms_results = []
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             min_scale=min_scale,
             max_scale=max_scale,
             n_scale=n_scale,
-            n_workers=4,
+            n_workers=n_workers,
             constructor="continuous_normalized",
         )
 
