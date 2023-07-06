@@ -35,10 +35,10 @@ def block(n, th, rng):
 
 if __name__ == "__main__":
 
-    n_realisations = 2  # 100
+    n_realisations = 100
 
     # Set MS parameters
-    n_scale = 10  # 200
+    n_scale = 200
     min_scale = -1.5
     max_scale = 0.5
     n_workers = 20
