@@ -9,8 +9,8 @@ from pygenstability import run
 # from skimage.feature import peak_local_max
 from tqdm import tqdm
 
-from msfiltration.scale_selection import select_scales_gaps
-from msfiltration.utils import node_id_to_dict
+from mcf.scale_selection import select_scales_gaps
+from mcf.utils import node_id_to_dict
 
 
 class MCF:
@@ -310,4 +310,3 @@ class MCF:
         ax.legend(loc=4)
 
         return ax
-
