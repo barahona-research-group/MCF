@@ -8,7 +8,7 @@ figures/
 
 # Directories
 notebooks/
-experiments/
+deprecated/
 
 # Unspecified results
 **/results.pkl
