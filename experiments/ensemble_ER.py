@@ -35,10 +35,10 @@ def block(n, th, rng):
 
 if __name__ == "__main__":
 
-    n_realisations = 100
+    n_realisations = 2  # 100
 
     # Set MS parameters
-    n_scale = 200
+    n_scale = 10  # 200
     min_scale = -1.5
     max_scale = 0.5
     n_workers = 20
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     average_persistent_hierarchy = []
 
     # network model parameters
-    n = 270
-    m = 3473
+    n0 = 270
+    n_edges = 3473
 
     # compute persistence for different realisations
     for i in range(n_realisations):
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         print("Starting with realisation {} ...".format(i + 1))
 
         # construct adjacency matrix
-        G = nx.gnm_random_graph(n, m, seed=i)
+        G = nx.gnm_random_graph(n0, n_edges, seed=i)
         A = nx.adjacency_matrix(G).toarray()
 
         # Run MS analysis
