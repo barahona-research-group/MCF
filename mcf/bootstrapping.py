@@ -3,13 +3,13 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skimage.feature import peak_local_max
-
-from msfiltration import MCF
-from msfiltration.scale_selection import select_scales_gaps
+from mcf import MCF
+from mcf.scale_selection import select_scales_gaps
 
 
 def msf_bootstrap(community_ids, log_times, n_sample, B=20, seed=0):
+
+    from skimage.feature import peak_local_max
 
     # obtain number of nodes
     n_nodes = len(community_ids[0])

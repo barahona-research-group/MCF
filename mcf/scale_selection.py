@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from scipy.signal import find_peaks
-from skimage.feature import peak_local_max
-
 
 def select_scales_gaps(
     deaths, log_times, threshold_abs=0.2, min_gap_width=0.2, with_plot=False
 ):
+
+    from scipy.signal import find_peaks
+    from skimage.feature import peak_local_max
 
     # convert to array
     deaths = np.asarray(list(deaths))
@@ -172,4 +172,3 @@ def select_scales_density(
 
     else:
         return selected_scales
-
