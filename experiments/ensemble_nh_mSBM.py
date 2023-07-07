@@ -71,6 +71,8 @@ if __name__ == "__main__":
         rng = np.random.RandomState(i + 200)
         A = block(n0, th0, rng)
         A += block_diag(*[block(int(n0 / n1), th1, rng) for i in range(n1)])
+        A += block_diag(*[block(int(n0 / n2), th2, rng) for i in range(n2)])
+        A += block_diag(*[block(int(n0 / n3), th3, rng) for i in range(n3)])
         A[A > 0] = 1
         A -= np.diag(np.diag(A))
 
