@@ -2,7 +2,7 @@ import gudhi as gd
 import numpy as np
 
 
-def compute_death_count(mcf, dim):
+def _compute_death_count(mcf, dim):
 
     # get all deaths for dimension
     all_deaths = mcf.filtration_gudhi.persistence_intervals_in_dimension(dim)[:, 1]
@@ -20,7 +20,7 @@ def compute_death_count(mcf, dim):
     return death_count
 
 
-def compute_birth_count(mcf, dim):
+def _compute_birth_count(mcf, dim):
 
     # get all births for dimension
     all_births = mcf.filtration_gudhi.persistence_intervals_in_dimension(dim)[:, 0]
@@ -35,32 +35,6 @@ def compute_birth_count(mcf, dim):
     return birth_count
 
 
-def compute_combined_death_count(mcf, dimensions):
-
-    # initialise combined death density array where the last entry corresponds to inf
-    combined_death_count = np.zeros(mcf.n_partitions + 1)
-
-    # sum of densities for different dimensions
-    for dim in dimensions:
-
-        combined_death_count += compute_death_count(mcf, dim)
-
-    return combined_death_count
-
-
-def compute_combined_birth_count(mcf, dimensions):
-
-    # initialise combined death density array where the last entry corresponds to inf
-    combined_birth_count = np.zeros(mcf.n_partitions + 1)
-
-    # sum of densities for different dimensions
-    for dim in dimensions:
-
-        combined_birth_count += compute_birth_count(mcf, dim)
-
-    return combined_birth_count
-
-
 def compute_partition_size(mcf):
     # compute rank of partition matrix
     return np.asarray(
@@ -68,11 +42,52 @@ def compute_partition_size(mcf):
     )
 
 
+def compute_bettis(mcf):
+    betti_numbers = np.zeros((mcf.n_partitions, 3))
+    n_dim = mcf.filtration_gudhi.dimension()
+
+    for m in range((mcf.n_partitions)):
+        betti_numbers[m][0:n_dim] = mcf.filtration_gudhi.persistent_betti_numbers(
+            mcf.filtration_indices[m], mcf.filtration_indices[m]
+        )
+
+    betti_0 = betti_numbers[:, 0]
+    betti_1 = betti_numbers[:, 1]
+    betti_2 = betti_numbers[:, 2]
+
+    return betti_0, betti_1, betti_2
+
+
 def compute_persistent_hierarchy(mcf):
-    # return compute_beta_0(mcf) / compute_partition_size(mcf)
-    pass
+
+    # compute 0-dim. Betti number and partition sizes
+    betti_0, _, _ = compute_bettis(mcf)
+    s = compute_partition_size(mcf)
+
+    # compute persistent hierarchy
+    h = betti_0 / s
+
+    # compute average persistent hierarchy
+    h_bar = np.mean(h[:-1])
+
+    return h, h_bar
 
 
-def compute_total_persistent_conflict(mcf, dim):
-    pass
+def compute_persistent_conflict(mcf):
 
+    # count births
+    b_1 = _compute_birth_count(mcf, 1)
+    b_2 = _compute_birth_count(mcf, 2)
+
+    # count deaths
+    d_1 = _compute_death_count(mcf, 1)[:-1]
+    d_2 = _compute_death_count(mcf, 2)[:-1]
+
+    # compute persistent conflict
+    c_1 = b_1 - d_1
+    c_2 = b_2 - d_2
+
+    # compute total persistent conflict
+    c = c_1 + c_2
+
+    return c_1, c_2, c
