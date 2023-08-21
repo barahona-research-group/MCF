@@ -9,8 +9,15 @@ from pygenstability import run
 # from skimage.feature import peak_local_max
 from tqdm import tqdm
 
+from mcf.measures import (
+    compute_bettis,
+    compute_partition_size,
+    compute_persistent_hierarchy,
+    compute_persistent_conflict,
+)
 from mcf.scale_selection import select_scales_gaps
 from mcf.utils import node_id_to_dict
+from mcf.plotting import plot_sankey, plot_persistence_diagram
 
 
 class MCF:
@@ -188,13 +195,6 @@ class MCF:
         # compute persistence with Eirene
         PD0, PD1, PD2, CR0, CR1, CR2 = self.jl.eval("Compute_PH(rv,cp,dv,fv,max_dim)")
 
-        # # summarise persistence for different dimensions
-        # self.persistence = []
-        # for i, PD in enumerate([PD2, PD1, PD0]):
-        #     if len(PD) > 0:
-        #         for birth_death in PD:
-        #             self.persistence.append((2 - i, (birth_death[0], birth_death[1])))
-
         # summarise persistence
         self.persistence = [PD0, PD1, PD2]
 
@@ -223,90 +223,30 @@ class MCF:
             )
 
     def plot_persistence_diagram(self, alpha=0.5):
-        """
-        code is a modified version of the GUDHI's plot_persistence_diagram
-        -> move to plotting.py
-        """
+        """plot persistence diagram"""
+        return plot_persistence_diagram(self, alpha)
 
-        # obtain min and max values and define value for infinity
-        tmin = self.filtration_indices[0]
-        tmax = self.filtration_indices[-1]
-        delta = 0.1 * abs(tmax - tmin)
-        infinity = tmax + delta
+    def plot_sankey(self, step=1, color=True, alpha=0.5):
+        """Plot Sankey diagram of partitions"""
+        return plot_sankey(self, step, color, alpha)
 
-        # font size
-        # plt.rcParams.update({"font.size": 20})
+    def compute_bettis(self):
+        """compute Betti numbers"""
+        betti_0, betti_1, betti_2 = compute_bettis(self)
+        return betti_0, betti_1, betti_2
 
-        # create axis
-        fig, ax = plt.subplots(1, figsize=(8, 7))
+    def compute_partition_size(self):
+        """compute size of partitions"""
+        s_partitions = compute_partition_size(self)
+        return s_partitions
 
-        # define colormap
-        colormap = plt.cm.Set1.colors
+    def compute_persistent_hierarchy(self):
+        """compute persistent hierarchy"""
+        h, h_bar = compute_persistent_hierarchy(self)
+        print("Average persistent hierarchy:", np.around(h_bar, 3))
+        return h, h_bar
 
-        # infinity line
-        ax.plot(
-            [tmin - 0.5 * delta, tmax],
-            [infinity, infinity],
-            linewidth=1.0,
-            color="k",
-            alpha=0.5,
-        )
-
-        # plot persistences
-        for dim, PD in enumerate(self.persistence):
-            if len(PD) > 0:
-                ax.scatter(
-                    PD[:, 0],
-                    np.nan_to_num(PD[:, 1], posinf=infinity),
-                    color=colormap[dim],
-                    alpha=alpha,
-                    label=r"$H_{}$".format(dim),
-                )
-
-        # plot top line
-        ax.plot([tmin - 0.5 * delta, tmax], [tmax, tmax], linewidth=1.0, color="k")
-
-        # plot diag
-        ax.plot([tmin, tmax], [tmin, tmax], linewidth=1.0, color="k")
-
-        # plot lower diag patch
-        ax.add_patch(
-            mpatches.Polygon(
-                [[tmin, tmin], [tmax, tmin], [tmax, tmax]], fill=True, color="lightgrey"
-            )
-        )
-
-        # labels and axes limits
-        ax.set(
-            xlabel="Birth",
-            ylabel="Death",
-            xlim=(tmin - 0.5 * delta, tmax),
-            ylim=(tmin, infinity + 0.5 * delta),
-        )
-
-        # Infinity and y-axis label
-        yt = ax.get_yticks()
-        yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
-        yt = np.append(yt, infinity)
-        ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
-        ytl[-1] = r"$+\infty$"
-        ax.set_yticks(yt)
-        ax.set_yticklabels(ytl)
-
-        # x-axis label
-        ax.set_xticks(yt[:-1])
-        ax.set_xticklabels(ytl[:-1])
-
-        # plot optimal scales
-        if len(self.optimal_scales) > 0:
-            ax.hlines(
-                self.filtration_indices[self.optimal_scales],
-                self.filtration_indices[0] - 1,
-                self.filtration_indices[-1] + 1,
-                color="gold",
-                label="Optimal scales",
-            )
-
-        ax.legend(loc=4)
-
-        return ax
+    def compute_persistent_conflict(self):
+        """compute persistent conflict"""
+        c_1, c_2, c = compute_persistent_conflict(self)
+        return c_1, c_2, c
