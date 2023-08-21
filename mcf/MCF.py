@@ -15,7 +15,6 @@ from mcf.measures import (
     compute_persistent_hierarchy,
     compute_persistent_conflict,
 )
-from mcf.scale_selection import select_scales_gaps
 from mcf.utils import node_id_to_dict
 from mcf.plotting import plot_sankey, plot_persistence_diagram
 
@@ -39,10 +38,6 @@ class MCF:
         # initialise persistent homology attributes
         self.persistence = []
         self.class_rep = []
-
-        # initial optimal scales attributes
-        self.optimal_scales = []
-        self.gap_width = None
 
     def load_data(self, partitions, filtration_indices=[]):
         """
@@ -200,27 +195,6 @@ class MCF:
 
         # summarise class rep
         self.class_rep = [CR0, CR1, CR2]
-
-    def select_scales(self, threshold_abs=0.2, min_gap_width=0.2, with_plot=False):
-
-        # get set of deaths
-        deaths = np.asarray(
-            [self.persistence[i][1][1] for i in range(len(self.persistence))]
-        )
-
-        if with_plot:
-
-            self.optimal_scales, self.gap_width, ax = select_scales_gaps(
-                deaths, self.filtration_indices, threshold_abs, min_gap_width, True
-            )
-
-            return ax
-
-        else:
-
-            self.optimal_scales, self.gap_width = select_scales_gaps(
-                deaths, self.filtration_indices, threshold_abs, min_gap_width, False
-            )
 
     def plot_persistence_diagram(self, alpha=0.5):
         """plot persistence diagram"""

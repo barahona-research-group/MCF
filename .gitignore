@@ -6,10 +6,6 @@
 figures/
 *.html
 
-# Directories
-notebooks/
-deprecated/
-
 # Unspecified results
 **/results.pkl
 

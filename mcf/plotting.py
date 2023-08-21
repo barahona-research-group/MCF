@@ -174,16 +174,6 @@ def plot_persistence_diagram(mcf, alpha=0.5):
     ax.set_xticks(yt[:-1])
     ax.set_xticklabels(ytl[:-1])
 
-    # plot optimal scales
-    if len(mcf.optimal_scales) > 0:
-        ax.hlines(
-            mcf.filtration_indices[mcf.optimal_scales],
-            mcf.filtration_indices[0] - 1,
-            mcf.filtration_indices[-1] + 1,
-            color="gold",
-            label="Optimal scales",
-        )
-
     ax.legend(loc=4)
 
     return ax
