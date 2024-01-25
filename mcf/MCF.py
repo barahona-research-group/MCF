@@ -50,9 +50,9 @@ class MCF:
     def load_ms_results(self, ms_results):
         """Method to directly load results from PyGenStability"""
         # get community assignments
-        self.partitions = self.ms_results["community_id"]
+        self.partitions = ms_results["community_id"]
         # get log_scales
-        self.filtration_indices = np.log10(self.ms_results["scales"])
+        self.filtration_indices = np.log10(ms_results["scales"])
         # get number of scales
         self.n_partitions = len(self.filtration_indices)
 
