@@ -137,8 +137,8 @@ def run_ensemble_experiment(model=SBM, n_realisations=300, n_ms_workers=100):
 if __name__ == "__main__":
 
     # define shared experiment parameters
-    N_REALISATIONS = 300
-    N_WORKERS = 100
+    N_REALISATIONS = 200
+    N_WORKERS = 60
 
     # define shared model parameters
     N = 270
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     p_in_nhmsbm = 0.85877
     nhmsbm = SBM(N, seed=3)
     nhmsbm.add_level(n_blocks=3, p_in=p_in_nhmsbm, p_out=P_OUT, weight=3)
-    nhmsbm.add_level(n_blocks=5, p_in=p_in_nhmsbm, p_out=P_OUT, weight=9)
+    nhmsbm.add_level(n_blocks=5, p_in=p_in_nhmsbm, p_out=P_OUT, weight=5)
     nhmsbm.add_level(n_blocks=27, p_in=p_in_nhmsbm, p_out=P_OUT, weight=27)
 
     # run ensemble experiment
