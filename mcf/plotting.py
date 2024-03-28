@@ -1,3 +1,5 @@
+"""Code for plotting Sankey diagrams and MCF persistence diagrams."""
+
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +11,8 @@ def plot_sankey(
     color=True,
     alpha=1.0,
 ):  # pragma: no cover
-    """Plot Sankey diagram of communities accros scale (plotly only). The following code is modified from the PyGenStability package.
+    """Plot Sankey diagram of communities accros scale (plotly only).
+    The following code is modified from the PyGenStability package.
 
     Args:
         mcf: MCF object
@@ -102,7 +105,7 @@ def plot_sankey(
 
 def plot_persistence_diagram(mcf, alpha=0.5):
     """
-    code is a modified version of the GUDHI's plot_persistence_diagram
+    Code is a modified version of the GUDHI's plot_persistence_diagram.
     """
 
     # obtain min and max values and define value for infinity

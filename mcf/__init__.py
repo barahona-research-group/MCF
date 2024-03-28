@@ -1,1 +1,4 @@
-from mcf.MCF import MCF
+"""Import MCF and SBM classes."""
+
+from mcf.mcf_base import MCF
+from mcf.sbm import SBM

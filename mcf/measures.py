@@ -1,8 +1,10 @@
-import gudhi as gd
+"""Compute various measures from MCF persistent homology."""
+
 import numpy as np
 
 
 def _compute_death_count(mcf, dim):
+    """Count the number of deaths at each scale."""
 
     # get all deaths for dimension
     all_deaths = mcf.filtration_gudhi.persistence_intervals_in_dimension(dim)[:, 1]
@@ -21,6 +23,7 @@ def _compute_death_count(mcf, dim):
 
 
 def _compute_birth_count(mcf, dim):
+    """Count the number of births at each scale."""
 
     # get all births for dimension
     all_births = mcf.filtration_gudhi.persistence_intervals_in_dimension(dim)[:, 0]
@@ -36,13 +39,14 @@ def _compute_birth_count(mcf, dim):
 
 
 def compute_partition_size(mcf):
-    # compute rank of partition matrix
+    """Compute partition sizes at all scales."""
     return np.asarray(
         [len(np.unique(mcf.partitions[i])) for i in range(mcf.n_partitions)]
     )
 
 
 def compute_bettis(mcf):
+    """Compute Betti curves."""
     betti_numbers = np.zeros((mcf.n_partitions, 3))
     n_dim = mcf.filtration_gudhi.dimension()
 
@@ -59,6 +63,7 @@ def compute_bettis(mcf):
 
 
 def compute_persistent_hierarchy(mcf):
+    """Compute persistent hierarchy of MCF."""
 
     # compute 0-dim. Betti number and partition sizes
     betti_0, _, _ = compute_bettis(mcf)
@@ -68,12 +73,14 @@ def compute_persistent_hierarchy(mcf):
     h = betti_0 / s
 
     # compute average persistent hierarchy
+    # TODO: take into account non-equidistant filtration indices
     h_bar = np.mean(h[:-1])
 
     return h, h_bar
 
 
 def compute_persistent_conflict(mcf):
+    """Compute persistent conflict of MCF."""
 
     # count births
     b_1 = _compute_birth_count(mcf, 1)

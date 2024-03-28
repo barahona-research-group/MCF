@@ -1,8 +1,10 @@
+"""Utils to process partition data."""
+
 import numpy as np
 
 
 def node_id_to_dict(node_id):
-    """
+    """Obtains communities from partition encoded as array.
     Input: Array of node_id's
     Output: Dictionary that maps community number to node_keys
     """
