@@ -1,15 +1,15 @@
 """Code for MS+MCF ensemble experiments."""
 
-import scipy
 import pickle
+import scipy
 
 import gudhi as gd
 import gudhi.wasserstein
 import numpy as np
 import pygenstability as pgs
 
-from mcf import MCF, SBM
 from tqdm import tqdm
+from mcf import MCF, SBM
 
 
 def run_ensemble_experiment(model=SBM, n_realisations=300, n_ms_workers=100):
@@ -138,8 +138,8 @@ if __name__ == "__main__":
     N_WORKERS = 60
 
     # define shared model parameters
-    N = 270
-    P_OUT = 0.028
+    N = 27 * 11
+    P_OUT = 0.012
 
     ######
     # ER #
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     print("### ER ###")
 
     # construct ER model
-    p_in_er = 0.09638
+    p_in_er = 0.07963
     er = SBM(N, seed=0)
     er.add_level(n_blocks=1, p_in=p_in_er, p_out=0, weight=1)
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     print("### sSBM ###")
 
     # construct sSBM model
-    p_in_ssbm = 0.23465
+    p_in_ssbm = 0.21624
     ssbm = SBM(N, seed=1)
     ssbm.add_level(n_blocks=3, p_in=p_in_ssbm, p_out=P_OUT, weight=3)
 
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     print("### mSBM ###")
 
     # construct mSBM model
-    p_in_msbm = 0.95839
+    p_in_msbm = 0.92819
     msbm = SBM(N, seed=2)
     msbm.add_level(n_blocks=3, p_in=p_in_msbm, p_out=P_OUT, weight=3)
     msbm.add_level(n_blocks=9, p_in=p_in_msbm, p_out=P_OUT, weight=9)
@@ -210,10 +210,10 @@ if __name__ == "__main__":
     print("### nh-mSBM ###")
 
     # construct nh-mSBM model
-    p_in_nhmsbm = 0.90838
+    p_in_nhmsbm = 0.9776
     nhmsbm = SBM(N, seed=3)
     nhmsbm.add_level(n_blocks=3, p_in=p_in_nhmsbm, p_out=P_OUT, weight=3)
-    nhmsbm.add_level(n_blocks=7, p_in=p_in_nhmsbm, p_out=P_OUT, weight=7)
+    nhmsbm.add_level(n_blocks=11, p_in=p_in_nhmsbm, p_out=P_OUT, weight=11)
     nhmsbm.add_level(n_blocks=27, p_in=p_in_nhmsbm, p_out=P_OUT, weight=27)
 
     # run ensemble experiment
