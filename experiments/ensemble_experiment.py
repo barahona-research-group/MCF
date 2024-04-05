@@ -22,6 +22,7 @@ def run_ensemble_experiment(model=SBM, n_realisations=300, n_ms_workers=100):
 
     # initialise lists of results
     adjacencies = []
+    permutations = []
     ms_results = []
     persistences = []
     bettis = []
@@ -36,8 +37,9 @@ def run_ensemble_experiment(model=SBM, n_realisations=300, n_ms_workers=100):
     for i in tqdm(range(n_realisations)):
 
         # sample adjacency matrix from model
-        A, _ = model.sample()
-        adjacencies.append(scipy.sparse.csr_matrix(A))
+        A, permutation = model.sample()
+        adjacencies.append(scipy.sparse.csr_array(A))
+        permutations.append(permutation)
 
         # Run MS analysis
         ms_result = pgs.run(
@@ -97,8 +99,7 @@ def run_ensemble_experiment(model=SBM, n_realisations=300, n_ms_workers=100):
 
     print("Computing bottleneck and Wasserstein distance ...")
 
-    # initialsise bottleneck and wasserstein distances for different dimensions
-    bottleneck_distances = np.zeros((n_realisations, n_realisations, 4))
+    # initialsise wasserstein distances for different dimensions
     wasserstein_distances = np.zeros((n_realisations, n_realisations, 4))
 
     for i in tqdm(range(n_realisations)):
@@ -107,10 +108,6 @@ def run_ensemble_experiment(model=SBM, n_realisations=300, n_ms_workers=100):
                 # compare two persistance diagrams for fixed dimension
                 Dgm_i = persistences[i][dim]
                 Dgm_j = persistences[j][dim]
-
-                # compute bottleneck distance
-                bottleneck_distances[i, j, dim] = gd.bottleneck_distance(Dgm_i, Dgm_j)
-                bottleneck_distances[j, i, dim] = bottleneck_distances[i, j, dim]
 
                 # compute 2-Wasserstein distance
                 wasserstein_distances[i, j, dim] = gd.wasserstein.wasserstein_distance(
@@ -121,9 +118,9 @@ def run_ensemble_experiment(model=SBM, n_realisations=300, n_ms_workers=100):
     # storing resutls
     results = {}
     results["adjacencies"] = adjacencies
+    results["permutations"] = permutations
     results["ms_results"] = ms_results
     results["persistence"] = persistences
-    results["bottleneck"] = bottleneck_distances
     results["wasserstein"] = wasserstein_distances
     results["bettis"] = bettis
     results["size_partitions"] = size_partitions
@@ -213,10 +210,10 @@ if __name__ == "__main__":
     print("### nh-mSBM ###")
 
     # construct nh-mSBM model
-    p_in_nhmsbm = 0.85877
+    p_in_nhmsbm = 0.90838
     nhmsbm = SBM(N, seed=3)
     nhmsbm.add_level(n_blocks=3, p_in=p_in_nhmsbm, p_out=P_OUT, weight=3)
-    nhmsbm.add_level(n_blocks=5, p_in=p_in_nhmsbm, p_out=P_OUT, weight=5)
+    nhmsbm.add_level(n_blocks=7, p_in=p_in_nhmsbm, p_out=P_OUT, weight=7)
     nhmsbm.add_level(n_blocks=27, p_in=p_in_nhmsbm, p_out=P_OUT, weight=27)
 
     # run ensemble experiment
@@ -236,12 +233,14 @@ if __name__ == "__main__":
 
     # combine results
     n_realisations_total = 4 * N_REALISATIONS
+
     combined_results = {
         0: results_er,
         1: results_ssbm,
         2: results_msbm,
         3: results_nhmsbm,
     }
+
     # initialsise wasserstein distances for different dimensions
     wasserstein_distances = np.zeros((n_realisations_total, n_realisations_total, 4))
 
@@ -295,35 +294,3 @@ if __name__ == "__main__":
 
     # store results
     np.save("results_comparison_frobenius", Frobenius_distances, allow_pickle=False)
-
-    # reshuffle graph to not use ground truth labels
-    rng = np.random.default_rng(N_REALISATIONS)
-    adjacencies_rewired = []
-
-    for i in range(n_realisations_total):
-        A = combined_results[i // N_REALISATIONS]["adjacencies"][i % N_REALISATIONS]
-        permutation = np.arange(270)
-        rng.shuffle(permutation)
-
-        B = A.todense()[permutation]
-
-        C = (B.T)[permutation]
-        C = C.T
-
-        adjacencies_rewired.append(C)
-
-    # compute Frobenius distances
-    Frobenius_distances_random = np.zeros((n_realisations_total, n_realisations_total))
-
-    for i in tqdm(range(n_realisations_total)):
-        for j in range(i + 1, n_realisations_total):
-
-            Frobenius_distances_random[i, j] = np.linalg.norm(
-                adjacencies_rewired[i] - adjacencies_rewired[j]
-            )
-            Frobenius_distances_random[j, i] = Frobenius_distances_random[i, j]
-
-    # store results
-    np.save(
-        "results_comparison_frobenius_random", Frobenius_distances, allow_pickle=False
-    )
