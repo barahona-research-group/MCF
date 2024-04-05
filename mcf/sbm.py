@@ -7,12 +7,39 @@ class SBM:
     """Class to sample from multiscale SBM."""
 
     def __init__(self, N, seed=42):
-        self.level = []
+        self.levels = []
+        self.P = np.zeros((N, N))
         self.n_nodes = N
         self.rng = np.random.default_rng(seed)
 
+    @property
+    def n_expected_edges(self):
+        """Computes number of expected edges."""
+        return self.P.sum() / 2
+
+    @property
+    def expected_sparsity(self):
+        """Computes expected sparsity."""
+        return 2 * self.n_expected_edges / (self.n_nodes * (self.n_nodes - 1))
+
+    @property
+    def n_levels(self):
+        """Returns number of levels."""
+        return len(self.levels)
+
+    @property
+    def labels(self):
+        """Compute cluster labels at different levels."""
+        # obtain labels
+        labels = []
+        for partition in self.levels:
+            # label is given by column of F matrix
+            y = partition["F"] @ np.arange(partition["F"].shape[1])
+            labels.append(y)
+        return labels
+
     def add_level(self, n_blocks, p_in, p_out, weight):
-        """ "Add partition to multiscale SBM."""
+        """Add partition to multiscale SBM."""
 
         # for simplicty all blocks have the same size
         s_blocks = self.n_nodes / n_blocks
@@ -28,35 +55,50 @@ class SBM:
             Omega += np.diag((p_in - p_out) * np.ones(n_blocks))
 
             # define probability matrix
-            P = F @ Omega @ F.T
+            P_level = F @ Omega @ F.T
 
         elif n_blocks == 1:
-            P = p_in * np.ones((self.n_nodes, self.n_nodes))
+            # define probability matrix in case of single block (ER model)
+            P_level = p_in * np.ones((self.n_nodes, self.n_nodes))
 
         # set diagonal zero to avoid self-loops
-        np.fill_diagonal(P, 0)
+        np.fill_diagonal(P_level, 0)
 
-        self.level.append({"P": P, "H": F, "w": weight})
+        # add to levels
+        self.levels.append({"P": P_level, "F": F, "w": weight})
 
-    def sample(self):
-        """Sample from multiscale SBM."""
+        # recompute combined probability matrix
+        self._combine_probabilities()
+        return self.P
 
-        # obtain combined probability matrix as convex sum
-        P = np.zeros((self.n_nodes, self.n_nodes))
+    def _combine_probabilities(self):
 
+        # obtain combined probability matrix as convex sum over levels
+        self.P = np.zeros((self.n_nodes, self.n_nodes))
         total_weight = 0
-
-        for partition in self.level:
-            P += partition["w"] * partition["P"]
+        for partition in self.levels:
+            self.P += partition["w"] * partition["P"]
             total_weight += partition["w"]
+        self.P /= total_weight
 
-        P /= total_weight
+        return self.P
+
+    def sample(self, with_shuffle=True):
+        """Sample from multiscale SBM."""
 
         # sample from Bernoulli(P)
         U = self.rng.uniform(size=(self.n_nodes, self.n_nodes))
-        A_unsymmetric = np.asarray(U <= P, dtype=int)
+        A_unsymmetric = np.asarray(U <= self.P, dtype=int)
 
         # make symmetric by copying upper triangular part
         A = np.tril(A_unsymmetric) + np.tril(A_unsymmetric).T
 
-        return A, P
+        # shuffle rows and columns to rewire graph
+        permutation = np.arange(self.n_nodes)
+        if with_shuffle:
+            self.rng.shuffle(permutation)
+
+        A = A[permutation]  # shuffle rows
+        A = (A.T[permutation]).T  # shuffle columns consistently
+
+        return A, permutation
