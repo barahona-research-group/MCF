@@ -1,6 +1,80 @@
+[![DOI](https://zenodo.org/badge/486166159.svg)](https://zenodo.org/doi/10.5281/zenodo.12665882)
+
 # MCF: Multiscale Clustering Filtration
 
-Code for the paper "Persistent Homology of the Multiscale Clustering Filtration" by Dominik J. Schindler and Mauricio Barahona: https://arxiv.org/abs/2305.04281
+This repository provides a Python implementation of the *Multiscale Clustering Filtration* (MCF) to analyse (non-hierarchical) sequences of partitions with persistent homology using `gudhi`. It is based on the paper "Persistent Homology of the Multiscale Clustering Filtration" by Dominik J. Schindler and Mauricio Barahona: https://arxiv.org/abs/2305.04281.
+
+
+## Installation
+Clone the repository and open the folder in your terminal. 
+
+```bash
+$ git clone https://github.com/barahona-research-group/MCF.git
+$ cd MCF/
+```
+
+Then, to install the package with ``pip``, execute the following command:
+
+```bash
+$ pip install .
+```
+
+## Using the code
+
+Given a (not necessarily hierarchical) sequence of partitions `theta` (a list of cluster indices lists) and a list of scales `t` we can construct the MCF filtration.
+
+```Python
+# initialise MCF object
+mcf = MCF()
+
+# load sequence of partitions
+mcf.load_data(theta,t)
+
+# build filtration
+mcf.build_filtration()
+```
+
+Note that the construction of the MCF (based on `gudhi.SimplexTree`) can require excessive memory when clusters become too large. We can then compute the persistent homology of the MCF and also plot the persistence diagram.
+
+```Python
+# compute persistent homology
+mcf.compute_persistence()
+
+# plot persistence diagram
+ax = mcf.plot_persistence_diagram()
+```
+
+From the persistent homology we can then compute the measure of *persistent hierarchy* to quantify the level of hierarchy in the sequence of partitions and the measure of *total persistent conflict* to quantify the presence of multiscale structure. 
+
+```Python
+# compute persistent hierarchy
+h, h_bar = mcf.compute_persistent_hierarchy()
+print("Average persistent hierarchy:",round(h_bar,4))
+
+# compute persistent conflict
+c_1, c_2, c = mcf.compute_persistent_conflict()
+```
+
+Our heuristic for scale selection is that robust partitions resolve many conflicts and are thus located at plateaus after dips in the total persistent conflict.
+
+## Experiments
+
+We apply the MCF framework to sequences of partitions corresponding to four different stochastic block models with different intrinsic structure using our `sbm` module:
+
+- Erdös-Renyi (Er) model: no scale, non-hierarchical
+- single-scale stochastic block model (sSBM): 1 scale, hierarchical
+- multiscale stochastic block model (mSBM): 3 scales, hierarchical
+- non-hierarchical stochastic block model (nh-mSBM): 3 scales, non-hierarchical
+
+To obtain sequences of partitions from the sampled graphs we use the `PyGenStability` Python package for multiscale clustering with Markov Stability analysis available at: https://github.com/barahona-research-group/PyGenStability
+
+We then analyse the MCF persistence diagrams, persistent hierarchy and persistent conflict to analyse the level of hierarchy and multiscale structures. All scripts and notebooks to reproduce our experiments can be found in the `\experiments` directory.
+
+## Contributors
+
+- Dominik Schindler, GitHub: `d-schindler <https://github.com/d-schindler>`
+
+We always look out for individuals that are interested in contributing to this open-source project. Even if you are just using `LGDE` and made some minor updates, we would be interested in your input.
 
 ## Cite
 
