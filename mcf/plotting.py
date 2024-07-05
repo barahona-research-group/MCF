@@ -103,7 +103,7 @@ def plot_sankey(
     return fig
 
 
-def plot_persistence_diagram(mcf, alpha=0.5):
+def plot_pd(mcf, alpha=0.5):
     """
     Code is a modified version of the GUDHI's plot_persistence_diagram.
     """
@@ -180,3 +180,110 @@ def plot_persistence_diagram(mcf, alpha=0.5):
     ax.legend(loc=4)
 
     return ax
+
+
+def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1):
+    """Code to plot ensemble PD. Modified from GUDHI."""
+
+    # get number of PDs and max dimension
+    n_realisations = len(all_persistences)
+
+    # get min and max log_times
+    tmin = log_times[0]
+    tmax = log_times[-1]
+
+    # compute delta to determine where to plot points at infinity
+    delta = 0.1 * abs(tmax - tmin)
+    infinity = tmax + delta
+
+    # font size
+    plt.rcParams.update({"font.size": 20})
+
+    # create axis
+    fig, ax = plt.subplots(1, figsize=(8, 7))
+
+    # define colormap
+    colormap = plt.cm.Set1.colors
+
+    # infinity line
+    ax.plot(
+        [tmin - 0.5 * delta, tmax],
+        [infinity, infinity],
+        linewidth=1.0,
+        color="k",
+        alpha=0.5,
+    )
+
+    # plot persistences
+    for i in range(n_realisations):
+        for dim in range(max_dim + 1):
+            persistences = all_persistences[i][dim]
+            if i == 0:
+                if len(persistences) > 0:
+                    ax.scatter(
+                        persistences[:, 0],
+                        np.nan_to_num(persistences[:, 1], posinf=infinity),
+                        color=colormap[dim],
+                        alpha=alpha,
+                        label=f"$H_{dim}$",
+                    )
+            else:
+                if len(persistences) > 0:
+                    ax.scatter(
+                        persistences[:, 0],
+                        np.nan_to_num(persistences[:, 1], posinf=infinity),
+                        color=colormap[dim],
+                        alpha=alpha,
+                    )
+
+    # plot top line
+    ax.plot([tmin - 0.5 * delta, tmax], [tmax, tmax], linewidth=1.0, color="k")
+
+    # plot diag
+    ax.plot([tmin, tmax], [tmin, tmax], linewidth=1.0, color="k")
+
+    # plot lower diag patch
+    ax.add_patch(
+        mpatches.Polygon(
+            [[tmin, tmin], [tmax, tmin], [tmax, tmax]], fill=True, color="lightgrey"
+        )
+    )
+
+    # labels and axes limits
+    ax.set(
+        xlabel="Birth",
+        ylabel="Death",
+        xlim=(tmin - 0.5 * delta, tmax),
+        ylim=(tmin, infinity + 0.5 * delta),
+    )
+
+    # Infinity and y-axis label
+    yt = ax.get_yticks()
+    yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
+    yt = np.append(yt, infinity)
+    ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
+    ytl[-1] = r"$+\infty$"
+    ax.set_yticks(yt)
+    ax.set_yticklabels(ytl)
+
+    # x-axis label
+    ax.set_xticks(yt[:-1])
+    ax.set_xticklabels(ytl[:-1])
+
+    # create legend for node types
+    legend = []
+    for dim in range(max_dim + 1):
+        legend.append(
+            plt.Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                label=f"$H_{dim}$",
+                markerfacecolor=colormap[dim],
+                markersize=10,
+            )
+        )
+    plt.legend(handles=legend, loc=4, facecolor="white", framealpha=1)
+
+    return fig, ax

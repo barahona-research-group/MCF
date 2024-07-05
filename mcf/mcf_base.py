@@ -13,7 +13,7 @@ from mcf.measures import (
     compute_persistent_conflict,
 )
 from mcf.utils import node_id_to_dict
-from mcf.plotting import plot_sankey, plot_persistence_diagram
+from mcf.plotting import plot_sankey, plot_pd
 
 
 class MCF:
@@ -103,9 +103,9 @@ class MCF:
             PD = self.filtration_gudhi.persistence_intervals_in_dimension(i)
             self.persistence.append(PD)
 
-    def plot_persistence_diagram(self, alpha=0.5):
+    def plot_pd(self, alpha=0.5):
         """Plot MCF persistence diagram."""
-        return plot_persistence_diagram(self, alpha)
+        return plot_pd(self, alpha)
 
     def plot_sankey(self, step=1, color=True, alpha=0.5):
         """Plot Sankey diagram of partitions."""
