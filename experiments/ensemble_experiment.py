@@ -136,10 +136,11 @@ if __name__ == "__main__":
     # define shared experiment parameters
     N_REALISATIONS = 200
     N_WORKERS = 60
+    DATE = "data/240521_"
 
     # define shared model parameters
-    N = 27 * 11
-    P_OUT = 0.012
+    N = 270
+    P_OUT = 0.001
 
     ######
     # ER #
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     print("### ER ###")
 
     # construct ER model
-    p_in_er = 0.07963
+    p_in_er = 0.06884
     er = SBM(N, seed=0)
     er.add_level(n_blocks=1, p_in=p_in_er, p_out=0, weight=1)
 
@@ -158,7 +159,7 @@ if __name__ == "__main__":
     )
 
     # store results
-    with open("results_ensemble_er.pkl", "wb") as handle:
+    with open(DATE + "results_ensemble_er.pkl", "wb") as handle:
         pickle.dump(results_er, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     ########
@@ -168,7 +169,7 @@ if __name__ == "__main__":
     print("### sSBM ###")
 
     # construct sSBM model
-    p_in_ssbm = 0.21624
+    p_in_ssbm = 0.20604
     ssbm = SBM(N, seed=1)
     ssbm.add_level(n_blocks=3, p_in=p_in_ssbm, p_out=P_OUT, weight=3)
 
@@ -178,7 +179,7 @@ if __name__ == "__main__":
     )
 
     # store results
-    with open("results_ensemble_ssbm.pkl", "wb") as handle:
+    with open(DATE + "results_ensemble_ssbm.pkl", "wb") as handle:
         pickle.dump(results_ssbm, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     ########
@@ -188,11 +189,11 @@ if __name__ == "__main__":
     print("### mSBM ###")
 
     # construct mSBM model
-    p_in_msbm = 0.92819
+    p_in_msbm = 0.96159
     msbm = SBM(N, seed=2)
-    msbm.add_level(n_blocks=3, p_in=p_in_msbm, p_out=P_OUT, weight=3)
-    msbm.add_level(n_blocks=9, p_in=p_in_msbm, p_out=P_OUT, weight=9)
-    msbm.add_level(n_blocks=27, p_in=p_in_msbm, p_out=P_OUT, weight=27)
+    msbm.add_level(n_blocks=3, p_in=p_in_msbm, p_out=P_OUT, weight=1)
+    msbm.add_level(n_blocks=9, p_in=p_in_msbm, p_out=P_OUT, weight=3)
+    msbm.add_level(n_blocks=27, p_in=p_in_msbm, p_out=P_OUT, weight=10)
 
     # run ensemble experiment
     results_msbm = run_ensemble_experiment(
@@ -200,7 +201,7 @@ if __name__ == "__main__":
     )
 
     # store results
-    with open("results_ensemble_msbm.pkl", "wb") as handle:
+    with open(DATE + "results_ensemble_msbm.pkl", "wb") as handle:
         pickle.dump(results_msbm, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     ###########
@@ -210,11 +211,11 @@ if __name__ == "__main__":
     print("### nh-mSBM ###")
 
     # construct nh-mSBM model
-    p_in_nhmsbm = 0.9776
+    p_in_nhmsbm = 0.91278
     nhmsbm = SBM(N, seed=3)
-    nhmsbm.add_level(n_blocks=3, p_in=p_in_nhmsbm, p_out=P_OUT, weight=3)
-    nhmsbm.add_level(n_blocks=11, p_in=p_in_nhmsbm, p_out=P_OUT, weight=11)
-    nhmsbm.add_level(n_blocks=27, p_in=p_in_nhmsbm, p_out=P_OUT, weight=27)
+    nhmsbm.add_level(n_blocks=3, p_in=p_in_nhmsbm, p_out=P_OUT, weight=1)
+    nhmsbm.add_level(n_blocks=5, p_in=p_in_nhmsbm, p_out=P_OUT, weight=2.25)
+    nhmsbm.add_level(n_blocks=27, p_in=p_in_nhmsbm, p_out=P_OUT, weight=13)
 
     # run ensemble experiment
     results_nhmsbm = run_ensemble_experiment(
@@ -222,7 +223,7 @@ if __name__ == "__main__":
     )
 
     # store results
-    with open("results_ensemble_nhmsbm.pkl", "wb") as handle:
+    with open(DATE + "results_ensemble_nhmsbm.pkl", "wb") as handle:
         pickle.dump(results_nhmsbm, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     ##########################
@@ -270,7 +271,11 @@ if __name__ == "__main__":
                 wasserstein_distances[j, i, dim] = wasserstein_distances[i, j, dim]
 
     # store results
-    np.save("results_comparison_wasserstein", wasserstein_distances, allow_pickle=False)
+    np.save(
+        DATE + "results_comparison_wasserstein",
+        wasserstein_distances,
+        allow_pickle=False,
+    )
 
     ########################
     # FROBENIUS COMPARISON #
@@ -293,4 +298,6 @@ if __name__ == "__main__":
             Frobenius_distances[j, i] = Frobenius_distances[i, j]
 
     # store results
-    np.save("results_comparison_frobenius", Frobenius_distances, allow_pickle=False)
+    np.save(
+        DATE + "results_comparison_frobenius", Frobenius_distances, allow_pickle=False
+    )

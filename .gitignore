@@ -1,10 +1,11 @@
-# Figures
+# Figures and data
 *.pdf
 *.svg
 *.png
 *.jpeg
 figures/
 *.html
+data/
 
 # Unspecified results
 **/results.pkl
