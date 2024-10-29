@@ -21,9 +21,11 @@ $ pip install .
 
 ## Using the code
 
-Given a (not necessarily hierarchical) sequence of partitions `theta` (a list of cluster indices lists) and a list of scales `t` we can construct the MCF filtration.
+Given a (not necessarily hierarchical) sequence of partitions `theta` (a list of cluster indices lists) and a list of scales `t` we can construct the MCF filtration using the `MCF` class.
 
 ```Python
+from mcf import MCF
+
 # initialise MCF object
 mcf = MCF()
 
@@ -34,7 +36,7 @@ mcf.load_data(theta,t)
 mcf.build_filtration()
 ```
 
-Note that the construction of the MCF (based on `gudhi.SimplexTree`) can require excessive memory when clusters become too large. We can then compute the persistent homology of the MCF and also plot the persistence diagram.
+Note that the construction of the MCF (based on `gudhi.SimplexTree`) can require excessive memory when clusters become too large. (Alternatively, one can also use the `MCNF` class to construct an equivalent nerve-based filtration, which can be computationally beneficial if the number of clusters is smaller than the number of points.) We can then compute the persistent homology of the MCF (or MCNF) and also plot the persistence diagram.
 
 ```Python
 # compute persistent homology

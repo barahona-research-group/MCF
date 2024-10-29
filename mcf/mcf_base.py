@@ -1,4 +1,4 @@
-"""Code for MCF."""
+"""Code for MCF and MCNF."""
 
 import itertools
 import gudhi as gd
@@ -24,27 +24,26 @@ class MCF:
 
         # initialise sequence of partitions
         self.partitions = []
-        self.n_partitions = 0
         self.filtration_indices = []
         self.max_dim = 3
 
         # initialise for gudhi
         self.filtration_gudhi = None
 
-        # initialise for eirene
-        self.jl = None
-        self.filtration_eirene = None
-
-        # initialise persistent homology attributes
+        # initialise persistent homology attribute
         self.persistence = []
-        self.class_rep = []
+
+    @property
+    def n_partitions(self):
+        """ "Computes number of partitions in sequence."""
+        return len(self.partitions)
 
     def load_data(self, partitions, filtration_indices=[]):
         """Method to load sequence of partitions and
         filtration indices."""
         self.partitions = partitions
-        self.n_partitions = len(partitions)
-        if len(filtration_indices):
+
+        if len(filtration_indices) > 0:
             self.filtration_indices = filtration_indices
         else:
             # if no filtration indices are given use enumeration
@@ -130,3 +129,111 @@ class MCF:
         """Compute persistent conflict."""
         c_1, c_2, c = compute_persistent_conflict(self)
         return c_1, c_2, c
+
+
+class MCNF(MCF):
+    """Class to construct MCNF from a sequence of partitions using equivalent
+    nerve-based construction and analyse its persistent homology. The only
+    difference from MCF class is the construction of filtration."""
+
+    def build_filtration(self, max_dim=3, tqdm_disable=False):
+        """Build MCNF filtration."""
+
+        # define max_dim of filtration
+        self.max_dim = min(3, max_dim)
+
+        # initialise simplex tree
+        self.filtration_gudhi = gd.SimplexTree()
+
+        # we store cluster indices of new clusters per partition
+        partitions_c_ind = []
+        # and a dictionary that maps cluster indices to sets
+        ind_to_c = {}
+
+        # store clusters seen already
+        all_clusters = set()
+        n_clusters_total = 0
+
+        # iterate through all partitions in sequence
+        for partition in self.partitions:
+            n_clusters_before = n_clusters_total
+            # get all cluster indices in partition
+            cluster_values = np.unique(partition)
+            # iterate through all clusters in partitions
+            for i in cluster_values:
+                # define cluster as a set
+                c = frozenset(np.argwhere(partition == i).flatten())
+                # check if cluster is new
+                if c in all_clusters:
+                    continue
+                else:
+                    # add cluster if new
+                    all_clusters.add(c)
+                    ind_to_c[n_clusters_total] = c
+                    n_clusters_total += 1
+            # store all indices of new clusters per partition
+            partitions_c_ind.append(np.arange(n_clusters_before, n_clusters_total))
+
+        # initialise simplices of different dimensions
+        nodes = list()
+        edges = list()
+        triangles = list()
+
+        # iterate through filtration indices
+        for i, t in tqdm(
+            enumerate(self.filtration_indices),
+            total=len(self.filtration_indices),
+            disable=tqdm_disable,
+        ):
+            # get new cluster indices
+            c_ind_new = partitions_c_ind[i]
+            # iterate through indices
+            for c_ind in c_ind_new:
+                c = ind_to_c[c_ind]
+
+                # add tetrahedra
+                if self.max_dim > 2:
+                    for triangle_ind in triangles:
+                        # get intersection of clusters corresponding to triangle
+                        triangle_intersection = (
+                            ind_to_c[triangle_ind[0]]
+                            .intersection(ind_to_c[triangle_ind[1]])
+                            .intersection(ind_to_c[triangle_ind[2]])
+                        )
+                        # check if new cluster intersects with triangle
+                        if len(c.intersection(triangle_intersection)) > 0:
+                            tetrahedron = triangle_ind + [c_ind]
+                            # insert tetrahedron into simplex tree
+                            self.filtration_gudhi.insert(tetrahedron, filtration=t)
+
+                # add triangles
+                if self.max_dim > 1:
+                    for edge_ind in edges:
+                        # get intersection of clusters corresponding to edge
+                        edge_intersection = ind_to_c[edge_ind[0]].intersection(
+                            ind_to_c[edge_ind[1]]
+                        )
+                        # check if new cluster intersects with edge
+                        if len(c.intersection(edge_intersection)) > 0:
+                            triangle = edge_ind + [c_ind]
+                            # insert triangle into simplex tree
+                            self.filtration_gudhi.insert(triangle, filtration=t)
+                            # add triangle to set
+                            triangles.append(triangle)
+
+                # add edges
+                for node_ind in nodes:
+                    # get cluster corresponding to node
+                    node_intersection = ind_to_c[node_ind[0]]
+                    # check if new cluster intersects with node
+                    if len(c.intersection(node_intersection)) > 0:
+                        edge = node_ind + [c_ind]
+                        # insert edge into simplex tree
+                        self.filtration_gudhi.insert(edge, filtration=t)
+                        # add edge to set
+                        edges.append(edge)
+
+                # add nodes
+                node = [c_ind]
+                self.filtration_gudhi.insert(node, filtration=t)
+                nodes.append(node)
