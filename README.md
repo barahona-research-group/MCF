@@ -59,6 +59,20 @@ c_1, c_2, c = mcf.compute_persistent_conflict()
 
 Our heuristic for scale selection is that robust partitions resolve many conflicts and are thus located at plateaus after dips in the total persistent conflict.
 
+To compute all MCF measures and store them in a results dictionary one can simply use the `compute_all_measures()` method.
+
+```Python
+# initialise MCF object
+mcf = MCF()
+
+# load sequence of partitions
+mcf.load_data(theta,t)
+
+# compute all MCF measures
+mcf.compute_all_measures(file_path="mcf_results.pkl",)
+```
+
+
 ## Experiments
 
 We apply the MCF framework to sequences of partitions corresponding to four different stochastic block models with different intrinsic structure using our `sbm` module:
