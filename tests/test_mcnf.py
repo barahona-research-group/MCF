@@ -115,3 +115,33 @@ def test_compute_persistent_conflict():
     assert np.array_equal(c_1, np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
     assert np.array_equal(c_2, np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
     assert np.array_equal(c, np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+
+
+def test_compute_all_measures():
+    """Test for computing all MCF measures."""
+
+    # initialise MCNF object
+    mcnf = MCNF()
+    mcnf.load_data(partitions, filtration_indices)
+
+    # compute all MCNF measures
+    mcnf_results = mcnf.compute_all_measures()
+
+    # check if results match
+    assert np.array_equal(mcnf_results["filtration_indices"], filtration_indices)
+    assert mcnf_results["max_dim"] == 3
+    assert np.array_equal(
+        mcnf_results["persistence"][0],
+        np.array([[1.0, 2.0], [1.0, 3.0], [1.0, np.inf]]),
+    )
+    assert np.array_equal(mcnf_results["persistence"][1], np.array([[4.0, 5.0]]))
+    assert len(mcnf_results["persistence"][2]) == 0
+    assert np.array_equal(mcnf_results["betti_0"], np.array([3, 2, 1, 1, 1]))
+    assert np.array_equal(mcnf_results["betti_1"], np.array([0, 0, 0, 1, 0]))
+    assert np.array_equal(mcnf_results["betti_2"], np.array([0, 0, 0, 0, 0]))
+    assert np.array_equal(mcnf_results["s_partitions"], np.array([3, 2, 2, 2, 1]))
+    assert np.array_equal(mcnf_results["h"], np.array([1.0, 1.0, 0.5, 0.5, 1.0]))
+    assert mcnf_results["h_bar"] == 0.75
+    assert np.array_equal(mcnf_results["c_1"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+    assert np.array_equal(mcnf_results["c_2"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+    assert np.array_equal(mcnf_results["c"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))

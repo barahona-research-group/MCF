@@ -17,7 +17,7 @@ def _compute_death_count(mcf, dim):
         death_count[i] = np.sum(all_deaths == mcf.filtration_indices[i])
 
     # count inf
-    death_count[mcf.n_partitions] = np.sum(all_deaths == np.Inf)
+    death_count[mcf.n_partitions] = np.sum(all_deaths == np.inf)
 
     return death_count
 

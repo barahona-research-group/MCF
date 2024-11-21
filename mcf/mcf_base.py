@@ -6,6 +6,7 @@ import numpy as np
 
 from tqdm import tqdm
 
+from mcf.io import save_results
 from mcf.measures import (
     compute_bettis,
     compute_partition_size,
@@ -129,6 +130,56 @@ class MCF:
         """Compute persistent conflict."""
         c_1, c_2, c = compute_persistent_conflict(self)
         return c_1, c_2, c
+
+    def compute_all_measures(
+        self,
+        file_path="mcf_results.pkl",
+    ):
+        """Construct filtration, compute PH and compute all derived measures."""
+
+        # build filtration
+        self.build_filtration()
+
+        # compute persistent homology
+        self.compute_persistence()
+
+        # obtain persistence
+        persistence = [
+            self.filtration_gudhi.persistence_intervals_in_dimension(dim)
+            for dim in range(self.max_dim)
+        ]
+
+        # compute Betti numbers
+        betti_0, betti_1, betti_2 = self.compute_bettis()
+
+        # compute size of partitions
+        s_partitions = self.compute_partition_size()
+
+        # compute persistent hierarchy
+        h, h_bar = self.compute_persistent_hierarchy()
+
+        # compute persistent conflict
+        c_1, c_2, c = self.compute_persistent_conflict()
+
+        # compile results dictionary
+        mcf_results = {}
+        mcf_results["filtration_indices"] = self.filtration_indices
+        mcf_results["max_dim"] = self.max_dim
+        mcf_results["persistence"] = persistence
+        mcf_results["betti_0"] = betti_0
+        mcf_results["betti_1"] = betti_1
+        mcf_results["betti_2"] = betti_2
+        mcf_results["s_partitions"] = s_partitions
+        mcf_results["h"] = h
+        mcf_results["h_bar"] = h_bar
+        mcf_results["c_1"] = c_1
+        mcf_results["c_2"] = c_2
+        mcf_results["c"] = c
+
+        # save results
+        save_results(mcf_results, file_path)
+
+        return mcf_results
 
 
 class MCNF(MCF):
