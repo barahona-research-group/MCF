@@ -97,11 +97,11 @@ We always look out for individuals that are interested in contributing to this o
 Please cite our paper if you use this code in your own work:
 
 ```
-@article{schindlerPersistentHomologyMultiscale2023,
+@article{schindlerAnalysingMultiscaleClusterings2024,
   author = {Schindler, Dominik J. and Barahona, Mauricio},
-  title = {Persistent Homology of the Multiscale Clustering Filtration},
+  title = {Analysing Multiscale Clusterings with Persistent Homology},
   publisher = {arXiv},
-  year = {2023},
+  year = {2024},
   doi = {10.48550/arXiv.2305.04281},
   url = {http://arxiv.org/abs/2305.04281},
 }
