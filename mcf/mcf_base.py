@@ -169,7 +169,7 @@ class MCF:
                             .intersection(ind_to_c[triangle_ind[2]])
                         )
                         # check if new cluster intersects with triangle
-                        if len(c.intersection(triangle_intersection)) > 0:
+                        if not c.isdisjoint(triangle_intersection):
                             tetrahedron = triangle_ind + [c_ind]
                             # insert tetrahedron into simplex tree
                             self.filtration_gudhi.insert(tetrahedron, filtration=t)
@@ -182,7 +182,7 @@ class MCF:
                             ind_to_c[edge_ind[1]]
                         )
                         # check if new cluster intersects with edge
-                        if len(c.intersection(edge_intersection)) > 0:
+                        if not c.isdisjoint(edge_intersection):
                             triangle = edge_ind + [c_ind]
                             # insert triangle into simplex tree
                             self.filtration_gudhi.insert(triangle, filtration=t)
@@ -194,7 +194,7 @@ class MCF:
                     # get cluster corresponding to node
                     node_intersection = ind_to_c[node_ind[0]]
                     # check if new cluster intersects with node
-                    if len(c.intersection(node_intersection)) > 0:
+                    if not c.isdisjoint(node_intersection):
                         edge = node_ind + [c_ind]
                         # insert edge into simplex tree
                         self.filtration_gudhi.insert(edge, filtration=t)
