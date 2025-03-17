@@ -1,4 +1,4 @@
-"""Code for MCF."""
+"""Code for Multiscale Clustering Filtration (MCF)."""
 
 import itertools
 import gudhi as gd
@@ -18,21 +18,24 @@ from mcf.plotting import plot_sankey, plot_pd
 
 
 class MCF:
-    """Main class to construct MCF from a sequence of
-    partitions and analyse its persistent homology."""
+    """Main class to construct MCF from a sequence of partitions and analyse
+    its persistent homology."""
 
     def __init__(self, method="standard", max_dim=3):
         """Initialise MCF object.
 
         Parameters:
-            max_dim (int): Maximum dimension of simplices considered in filtration.
+            max_dim (int): Maximum dimension of simplices considered
+                in filtration.
 
-            method (str): Method to construct the MCF.
-                - 'standard': Standard method where nodes in MCF correspond to points. Faster
-                    when the number of points is smaller than the total number of distinct clusters.
-                - 'nerve': Nerve-based method where nodes in MCF correspond to clusters. Faster
-                    when the total number of distinct clusters is smaller than the number of points.
-                Both methods lead to the same persistent homology, see our paper.
+            method (str): Method to construct the MCF. Both methods lead to the
+                same persistent homology, see our paper.
+                - 'standard': Standard method where nodes in MCF correspond
+                    to points. Faster when the number of points is smaller
+                    than the total number of distinct clusters.
+                - 'nerve': Nerve-based method where nodes in MCF correspond to
+                    clusters. Faster when the total number of distinct clusters
+                    is smaller than the number of points.
         """
 
         # initialise sequence of partitions
