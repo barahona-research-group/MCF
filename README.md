@@ -27,16 +27,16 @@ Given a (not necessarily hierarchical) sequence of partitions `theta` (a list of
 from mcf import MCF
 
 # initialise MCF object
-mcf = MCF()
+mcf = MCF(max_dim=3, method="standard)
 
 # load sequence of partitions
-mcf.load_data(theta,t)
+mcf.load_data(theta, t)
 
 # build filtration
 mcf.build_filtration()
 ```
 
-Note that the construction of the MCF (based on `gudhi.SimplexTree`) can require excessive memory when clusters become too large. (Alternatively, one can also use the `MCNF` class to construct an equivalent nerve-based filtration, which can be computationally beneficial if the number of clusters is smaller than the number of points.) We can then compute the persistent homology of the MCF (or MCNF) and also plot the persistence diagram.
+Note that the construction of the MCF (based on `gudhi.SimplexTree`) can require excessive memory when clusters become too large. When the total number of (distinct) clusters is smaller than the number of points, it can be computationally advantageous to construct the MCF using the equivalent nerve-based construction with `method='nerve'`. We can then compute the persistent homology of the MCF and also plot the persistence diagram.
 
 ```Python
 # compute persistent homology
@@ -59,7 +59,7 @@ c_1, c_2, c = mcf.compute_persistent_conflict()
 
 Our heuristic for scale selection is that robust partitions resolve many conflicts and are thus located at plateaus after dips in the total persistent conflict.
 
-To compute all MCF measures and store them in a results dictionary one can simply use the `compute_all_measures()` method.
+To compute all MCF measures and store them in a dictionary one can simply use the `compute_all_measures()` method.
 
 ```Python
 # initialise MCF object
