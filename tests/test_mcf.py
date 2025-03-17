@@ -1,7 +1,7 @@
 """Tests for MCF"""
 
 import numpy as np
-import pytest
+import numpy.testing as npt
 
 
 from mcf import MCF
@@ -22,7 +22,7 @@ def test_compute_partition_size():
     s_partitions = mcf.compute_partition_size()
 
     # check if sizes match
-    assert np.array_equal(s_partitions, np.array([3, 2, 2, 2, 1]))
+    npt.assert_allclose(s_partitions, np.array([3, 2, 2, 2, 1]))
 
 
 def test_build_filtration():
@@ -60,13 +60,13 @@ def test_compute_persistence():
 
     # check if persistence pairs match for 0-dim
     assert len(mcf.persistence[0]) == 3
-    assert np.array_equal(mcf.persistence[0][0], np.array([1.0, 2.0]))
-    assert np.array_equal(mcf.persistence[0][1], np.array([1.0, 3.0]))
-    assert np.array_equal(mcf.persistence[0][2], np.array([1.0, np.inf]))
+    npt.assert_allclose(mcf.persistence[0][0], np.array([1.0, 2.0]))
+    npt.assert_allclose(mcf.persistence[0][1], np.array([1.0, 3.0]))
+    npt.assert_allclose(mcf.persistence[0][2], np.array([1.0, np.inf]))
 
     # check if persistence pairs match for 1-dim
     assert len(mcf.persistence[1]) == 1
-    assert np.array_equal(mcf.persistence[1][0], np.array([4.0, 5.0]))
+    npt.assert_allclose(mcf.persistence[1][0], np.array([4.0, 5.0]))
 
     # check if persistence pairs match for 2-dim
     assert len(mcf.persistence[2]) == 0
@@ -89,9 +89,9 @@ def test_compute_bettis():
     betti_0, betti_1, betti_2 = mcf.compute_bettis()
 
     # check if Bett curves match
-    assert np.array_equal(betti_0, np.array([3, 2, 1, 1, 1]))
-    assert np.array_equal(betti_1, np.array([0, 0, 0, 1, 0]))
-    assert np.array_equal(betti_2, np.array([0, 0, 0, 0, 0]))
+    npt.assert_allclose(betti_0, np.array([3, 2, 1, 1, 1]))
+    npt.assert_allclose(betti_1, np.array([0, 0, 0, 1, 0]))
+    npt.assert_allclose(betti_2, np.array([0, 0, 0, 0, 0]))
 
 
 def test_compute_persistent_hierarchy():
@@ -112,7 +112,7 @@ def test_compute_persistent_hierarchy():
 
     # check if persistent hierachy matches
     assert h_bar == 0.75
-    assert np.array_equal(h, np.array([1.0, 1.0, 0.5, 0.5, 1.0]))
+    npt.assert_allclose(h, np.array([1.0, 1.0, 0.5, 0.5, 1.0]))
 
 
 def test_compute_persistent_conflict():
@@ -132,9 +132,9 @@ def test_compute_persistent_conflict():
     c_1, c_2, c = mcf.compute_persistent_conflict()
 
     # check if persistent conflict matches
-    assert np.array_equal(c_1, np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
-    assert np.array_equal(c_2, np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
-    assert np.array_equal(c, np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+    npt.assert_allclose(c_1, np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+    npt.assert_allclose(c_2, np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+    npt.assert_allclose(c, np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
 
 
 def test_compute_all_measures():
@@ -148,19 +148,19 @@ def test_compute_all_measures():
     mcf_results = mcf.compute_all_measures()
 
     # check if results match
-    assert np.array_equal(mcf_results["filtration_indices"], filtration_indices)
+    npt.assert_allclose(mcf_results["filtration_indices"], filtration_indices)
     assert mcf_results["max_dim"] == 3
-    assert np.array_equal(
+    npt.assert_allclose(
         mcf_results["persistence"][0], np.array([[1.0, 2.0], [1.0, 3.0], [1.0, np.inf]])
     )
-    assert np.array_equal(mcf_results["persistence"][1], np.array([[4.0, 5.0]]))
+    npt.assert_allclose(mcf_results["persistence"][1], np.array([[4.0, 5.0]]))
     assert len(mcf_results["persistence"][2]) == 0
-    assert np.array_equal(mcf_results["betti_0"], np.array([3, 2, 1, 1, 1]))
-    assert np.array_equal(mcf_results["betti_1"], np.array([0, 0, 0, 1, 0]))
-    assert np.array_equal(mcf_results["betti_2"], np.array([0, 0, 0, 0, 0]))
-    assert np.array_equal(mcf_results["s_partitions"], np.array([3, 2, 2, 2, 1]))
-    assert np.array_equal(mcf_results["h"], np.array([1.0, 1.0, 0.5, 0.5, 1.0]))
+    npt.assert_allclose(mcf_results["betti_0"], np.array([3, 2, 1, 1, 1]))
+    npt.assert_allclose(mcf_results["betti_1"], np.array([0, 0, 0, 1, 0]))
+    npt.assert_allclose(mcf_results["betti_2"], np.array([0, 0, 0, 0, 0]))
+    npt.assert_allclose(mcf_results["s_partitions"], np.array([3, 2, 2, 2, 1]))
+    npt.assert_allclose(mcf_results["h"], np.array([1.0, 1.0, 0.5, 0.5, 1.0]))
     assert mcf_results["h_bar"] == 0.75
-    assert np.array_equal(mcf_results["c_1"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
-    assert np.array_equal(mcf_results["c_2"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
-    assert np.array_equal(mcf_results["c"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+    npt.assert_allclose(mcf_results["c_1"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+    npt.assert_allclose(mcf_results["c_2"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+    npt.assert_allclose(mcf_results["c"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))

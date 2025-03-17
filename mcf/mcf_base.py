@@ -1,4 +1,4 @@
-"""Code for MCF and MCNF."""
+"""Code for MCF."""
 
 import itertools
 import gudhi as gd
@@ -21,15 +21,32 @@ class MCF:
     """Main class to construct MCF from a sequence of
     partitions and analyse its persistent homology."""
 
-    def __init__(self):
+    def __init__(self, method="standard", max_dim=3):
+        """Initialise MCF object.
+
+        Parameters:
+            max_dim (int): Maximum dimension of simplices considered in filtration.
+
+            method (str): Method to construct the MCF.
+                - 'standard': Standard method where nodes in MCF correspond to points. Faster
+                    when the number of points is smaller than the total number of distinct clusters.
+                - 'nerve': Nerve-based method where nodes in MCF correspond to clusters. Faster
+                    when the total number of distinct clusters is smaller than the number of points.
+                Both methods lead to the same persistent homology, see our paper.
+        """
 
         # initialise sequence of partitions
         self.partitions = []
         self.filtration_indices = []
-        self.max_dim = 3
+
+        # set max dimension of filtration
+        self.max_dim = min(3, max_dim)
+
+        # set method to construct filtration, either standard or nerve-based
+        self.method = method
 
         # initialise for gudhi
-        self.filtration_gudhi = None
+        self.filtration_gudhi = gd.SimplexTree()
 
         # initialise persistent homology attribute
         self.persistence = []
@@ -50,12 +67,8 @@ class MCF:
             # if no filtration indices are given use enumeration
             self.filtration_indices = np.arange(1, self.n_partitions + 1)
 
-    def build_filtration(self, max_dim=3, tqdm_disable=False):
-        """Build MCF filtration."""
-
-        # define max_dim of filtration
-        self.max_dim = min(3, max_dim)
-
+    def _build_filtration_standard(self, tqdm_disable=False):
+        """Construct MCF via standard method."""
         # initialise simplex tree
         self.filtration_gudhi = gd.SimplexTree()
 
@@ -91,107 +104,8 @@ class MCF:
                         list(face), filtration=self.filtration_indices[t]
                     )
 
-    def compute_persistence(self):
-        """Compute persistent homology of MCF."""
-
-        # compute persistence with GUDHI (over 2 element field)
-        self.filtration_gudhi.persistence(homology_coeff_field=2)
-
-        # summarise persistence
-        self.persistence = []
-        for i in range(self.max_dim):
-            PD = self.filtration_gudhi.persistence_intervals_in_dimension(i)
-            self.persistence.append(PD)
-
-    def plot_pd(self, alpha=0.5):
-        """Plot MCF persistence diagram."""
-        return plot_pd(self, alpha)
-
-    def plot_sankey(self, step=1, color=True, alpha=0.5):
-        """Plot Sankey diagram of partitions."""
-        return plot_sankey(self, step, color, alpha)
-
-    def compute_bettis(self):
-        """Compute Betti curves of MCF."""
-        betti_0, betti_1, betti_2 = compute_bettis(self)
-        return betti_0, betti_1, betti_2
-
-    def compute_partition_size(self):
-        """Compute size of partitions."""
-        s_partitions = compute_partition_size(self)
-        return s_partitions
-
-    def compute_persistent_hierarchy(self):
-        """Compute persistent hierarchy."""
-        h, h_bar = compute_persistent_hierarchy(self)
-        return h, h_bar
-
-    def compute_persistent_conflict(self):
-        """Compute persistent conflict."""
-        c_1, c_2, c = compute_persistent_conflict(self)
-        return c_1, c_2, c
-
-    def compute_all_measures(
-        self,
-        file_path="mcf_results.pkl",
-    ):
-        """Construct filtration, compute PH and compute all derived measures."""
-
-        # build filtration
-        self.build_filtration()
-
-        # compute persistent homology
-        self.compute_persistence()
-
-        # obtain persistence
-        persistence = [
-            self.filtration_gudhi.persistence_intervals_in_dimension(dim)
-            for dim in range(self.max_dim)
-        ]
-
-        # compute Betti numbers
-        betti_0, betti_1, betti_2 = self.compute_bettis()
-
-        # compute size of partitions
-        s_partitions = self.compute_partition_size()
-
-        # compute persistent hierarchy
-        h, h_bar = self.compute_persistent_hierarchy()
-
-        # compute persistent conflict
-        c_1, c_2, c = self.compute_persistent_conflict()
-
-        # compile results dictionary
-        mcf_results = {}
-        mcf_results["filtration_indices"] = self.filtration_indices
-        mcf_results["max_dim"] = self.max_dim
-        mcf_results["persistence"] = persistence
-        mcf_results["betti_0"] = betti_0
-        mcf_results["betti_1"] = betti_1
-        mcf_results["betti_2"] = betti_2
-        mcf_results["s_partitions"] = s_partitions
-        mcf_results["h"] = h
-        mcf_results["h_bar"] = h_bar
-        mcf_results["c_1"] = c_1
-        mcf_results["c_2"] = c_2
-        mcf_results["c"] = c
-
-        # save results
-        save_results(mcf_results, file_path)
-
-        return mcf_results
-
-
-class MCNF(MCF):
-    """Class to construct MCNF from a sequence of partitions using equivalent
-    nerve-based construction and analyse its persistent homology. The only
-    difference from MCF class is the construction of filtration."""
-
-    def build_filtration(self, max_dim=3, tqdm_disable=False):
-        """Build MCNF filtration."""
-
-        # define max_dim of filtration
-        self.max_dim = min(3, max_dim)
+    def _build_filtration_nerve(self, tqdm_disable=False):
+        """Construct MCF via nerve-based method."""
 
         # initialise simplex tree
         self.filtration_gudhi = gd.SimplexTree()
@@ -288,3 +202,102 @@ class MCNF(MCF):
                 node = [c_ind]
                 self.filtration_gudhi.insert(node, filtration=t)
                 nodes.append(node)
+
+    def build_filtration(self, tqdm_disable=False):
+        """Build MCF filtration."""
+
+        if self.method == "standard":
+            self._build_filtration_standard(tqdm_disable=tqdm_disable)
+
+        elif self.method == "nerve":
+            self._build_filtration_nerve(tqdm_disable=tqdm_disable)
+
+    def compute_persistence(self):
+        """Compute persistent homology of MCF using GUDHI."""
+
+        # compute persistence with GUDHI (over 2 element field)
+        self.filtration_gudhi.persistence(homology_coeff_field=2)
+
+        # summarise persistence
+        self.persistence = []
+        for i in range(self.max_dim):
+            PD = self.filtration_gudhi.persistence_intervals_in_dimension(i)
+            self.persistence.append(PD)
+
+    def plot_pd(self, alpha=0.5, marker_size=None):
+        """Plot MCF persistence diagram."""
+        return plot_pd(self, alpha, marker_size)
+
+    def plot_sankey(self, step=1, color=True, alpha=0.5, pad=0.1, thickness=1):
+        """Plot Sankey diagram of partitions."""
+        return plot_sankey(self, step, color, alpha, pad, thickness)
+
+    def compute_bettis(self):
+        """Compute Betti curves of MCF."""
+        betti_0, betti_1, betti_2 = compute_bettis(self)
+        return betti_0, betti_1, betti_2
+
+    def compute_partition_size(self):
+        """Compute size of partitions."""
+        s_partitions = compute_partition_size(self)
+        return s_partitions
+
+    def compute_persistent_hierarchy(self):
+        """Compute persistent hierarchy."""
+        h, h_bar = compute_persistent_hierarchy(self)
+        return h, h_bar
+
+    def compute_persistent_conflict(self):
+        """Compute persistent conflict."""
+        c_1, c_2, c = compute_persistent_conflict(self)
+        return c_1, c_2, c
+
+    def compute_all_measures(
+        self,
+        file_path="mcf_results.pkl",
+    ):
+        """Construct MCF, compute PH and compute all derived measures."""
+
+        # build filtration
+        self.build_filtration()
+
+        # compute persistent homology
+        self.compute_persistence()
+
+        # obtain persistence
+        persistence = [
+            self.filtration_gudhi.persistence_intervals_in_dimension(dim)
+            for dim in range(self.max_dim)
+        ]
+
+        # compute Betti numbers
+        betti_0, betti_1, betti_2 = self.compute_bettis()
+
+        # compute size of partitions
+        s_partitions = self.compute_partition_size()
+
+        # compute persistent hierarchy
+        h, h_bar = self.compute_persistent_hierarchy()
+
+        # compute persistent conflict
+        c_1, c_2, c = self.compute_persistent_conflict()
+
+        # compile results dictionary
+        mcf_results = {}
+        mcf_results["filtration_indices"] = self.filtration_indices
+        mcf_results["max_dim"] = self.max_dim
+        mcf_results["persistence"] = persistence
+        mcf_results["betti_0"] = betti_0
+        mcf_results["betti_1"] = betti_1
+        mcf_results["betti_2"] = betti_2
+        mcf_results["s_partitions"] = s_partitions
+        mcf_results["h"] = h
+        mcf_results["h_bar"] = h_bar
+        mcf_results["c_1"] = c_1
+        mcf_results["c_2"] = c_2
+        mcf_results["c"] = c
+
+        # save results
+        save_results(mcf_results, file_path)
+
+        return mcf_results
