@@ -7,6 +7,12 @@ class SBM:
     """Class to sample from multiscale SBM."""
 
     def __init__(self, N, seed=42):
+        """Initialise multiscale SBM object.
+
+        Parameters:
+            N (int): Number of nodes.
+            seed (float): Seed for random number generator.
+        """
         self.levels = []
         self.P = np.zeros((N, N))
         self.n_nodes = N
@@ -38,8 +44,17 @@ class SBM:
             labels.append(y)
         return labels
 
-    def add_level(self, n_blocks, p_in, p_out, weight):
-        """Add partition to multiscale SBM."""
+    def add_level(self, n_blocks=1, p_in=0.1, p_out=0, weight=1):
+        """Add partition to multiscale SBM.
+
+        Parameters:
+            n_blocks (int): Number of blocks, equally divided (up to remainders).
+            p_in (float): Probability (from 0 to 1) of connection for two nodes
+                within the same block.
+            p_out (float): Probability (from 0 to 1) of connection for two nodes
+                across different blocks.
+            weight (float): Weight for this level in the multiscale SBM.
+        """
 
         # for simplicty all blocks have the same size
         s_blocks = self.n_nodes / n_blocks
@@ -72,6 +87,7 @@ class SBM:
         return self.P
 
     def _combine_probabilities(self):
+        """Compute probability matrix from different layers."""
 
         # obtain combined probability matrix as convex sum over levels
         self.P = np.zeros((self.n_nodes, self.n_nodes))
@@ -84,7 +100,11 @@ class SBM:
         return self.P
 
     def sample(self, with_shuffle=True):
-        """Sample from multiscale SBM."""
+        """Sample from multiscale SBM.
+
+        Parameters:
+            with_shuffle (bool): Permutes node IDs if true.
+        """
 
         # sample from Bernoulli(P)
         U = self.rng.uniform(size=(self.n_nodes, self.n_nodes))
