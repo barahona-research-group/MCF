@@ -10,6 +10,8 @@ def plot_sankey(
     step=1,
     color=True,
     alpha=1.0,
+    pad=0.1,
+    thickness=1,
 ):  # pragma: no cover
     """Plot Sankey diagram of communities accros scale (plotly only).
     The following code is modified from the PyGenStability package.
@@ -19,6 +21,8 @@ def plot_sankey(
         scale_index (bool): plot scale of indices
         color (bool): plot colourful Sankey
         alpha (float): transparency of colours
+        pad (float): space between nodes
+        thickness (float): thickness of nodes
     """
 
     import matplotlib.colors
@@ -88,8 +92,8 @@ def plot_sankey(
         data=[
             go.Sankey(
                 node={
-                    "pad": 0.1,
-                    "thickness": 1,
+                    "pad": pad,
+                    "thickness": thickness,
                     "line": {"color": "black", "width": 0.0},
                 },
                 link=link,
@@ -103,9 +107,14 @@ def plot_sankey(
     return fig
 
 
-def plot_pd(mcf, alpha=0.5):
+def plot_pd(mcf, alpha=0.5, marker_size=None):
     """
     Code is a modified version of the GUDHI's plot_persistence_diagram.
+
+    Args:
+        mcf: MCF object
+        alpha (float): transparency of points in PD
+        marker_size: size of points in PD
     """
 
     # obtain min and max values and define value for infinity
@@ -141,6 +150,7 @@ def plot_pd(mcf, alpha=0.5):
                 color=colormap[dim],
                 alpha=alpha,
                 label=r"$H_{}$".format(dim),
+                s=marker_size,
             )
 
     # plot top line
