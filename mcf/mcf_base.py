@@ -13,7 +13,7 @@ from mcf.measures import (
     compute_persistent_hierarchy,
     compute_persistent_conflict,
 )
-from mcf.utils import node_id_to_dict
+from mcf.utils import node_id_to_dict, _cluster_id_preprocessing
 from mcf.plotting import plot_sankey, plot_pd
 
 
@@ -26,7 +26,7 @@ class MCF:
 
         Parameters:
             max_dim (int): Maximum dimension of simplices considered
-                in filtration.
+                in filtration, between 1 and 3.
 
             method (str): Method to construct the MCF. Both methods lead to the
                 same persistent homology, see our paper.
@@ -113,34 +113,9 @@ class MCF:
         # initialise simplex tree
         self.filtration_gudhi = gd.SimplexTree()
 
-        # we store cluster indices of new clusters per partition
-        partitions_c_ind = []
+        # we compute cluster indices of new clusters per partition
         # and a dictionary that maps cluster indices to sets
-        ind_to_c = {}
-
-        # store clusters seen already
-        all_clusters = set()
-        n_clusters_total = 0
-
-        # iterate through all partitions in sequence
-        for partition in self.partitions:
-            n_clusters_before = n_clusters_total
-            # get all cluster indices in partition
-            cluster_values = np.unique(partition)
-            # iterate through all clusters in partitions
-            for i in cluster_values:
-                # define cluster as a set
-                c = frozenset(np.argwhere(partition == i).flatten())
-                # check if cluster is new
-                if c in all_clusters:
-                    continue
-                else:
-                    # add cluster if new
-                    all_clusters.add(c)
-                    ind_to_c[n_clusters_total] = c
-                    n_clusters_total += 1
-            # store all indices of new clusters per partition
-            partitions_c_ind.append(np.arange(n_clusters_before, n_clusters_total))
+        partitions_c_ind, ind_to_c = _cluster_id_preprocessing(self.partitions)
 
         # initialise simplices of different dimensions
         nodes = list()
