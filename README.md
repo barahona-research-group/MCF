@@ -2,7 +2,7 @@
 
 # MCF: Multiscale Clustering Filtration
 
-This repository provides a Python implementation of the *Multiscale Clustering Filtration* (MCF) to analyse (non-hierarchical) sequences of partitions with persistent homology using `gudhi`. It is based on the paper "Persistent Homology of the Multiscale Clustering Filtration" by Dominik J. Schindler and Mauricio Barahona: https://arxiv.org/abs/2305.04281.
+This repository provides a Python implementation of the *Multiscale Clustering Filtration* (MCF) to analyse (non-hierarchical) sequences of partitions with persistent homology using `gudhi`. It is based on the paper "Analysing Multiscale Clusterings with Persistent Homology" by Dominik J. Schindler and Mauricio Barahona: https://arxiv.org/abs/2305.04281.
 
 
 ## Installation
