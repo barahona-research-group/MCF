@@ -264,6 +264,7 @@ class MCF:
         mcf_results = {}
         mcf_results["filtration_indices"] = self.filtration_indices
         mcf_results["max_dim"] = self.max_dim
+        mcf_results["method"] = self.method
         mcf_results["persistence"] = persistence
         mcf_results["betti_0"] = betti_0
         mcf_results["betti_1"] = betti_1

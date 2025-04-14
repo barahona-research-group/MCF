@@ -88,16 +88,25 @@ class MCbiF:
     def _compute_mcbif_bigrades_standard(
         self,
         tqdm_disable=False,
+        precomp_mcf=None,
     ):
+        if precomp_mcf is not None:
+            assert precomp_mcf.method == "standard", (
+                "Precomputed MCF must be of standard type."
+            )
+            # if MCF was precomputed, use it
+            mcf = precomp_mcf.copy()
+            # prune MCF to max_dim
+            mcf.filtration_gudhi = mcf.filtration_gudhi.prune_above_dimension(self.max_dim)
 
-        print("Construct one-parameter filtration ...")
-
-        # compute one-parameter MCF
-        mcf = MCF(max_dim=self.max_dim, method="standard")
-        mcf.load_data(
-            partitions=self.partitions, filtration_indices=self.filtration_indices
-        )
-        mcf.build_filtration()
+        else:
+            print("Construct one-parameter filtration ...")
+            # compute one-parameter MCF
+            mcf = MCF(max_dim=self.max_dim, method="standard")
+            mcf.load_data(
+                partitions=self.partitions, filtration_indices=self.filtration_indices
+            )
+            mcf.build_filtration()
 
         # get list of clusters as frozensets
         partitions_clusters = _get_partition_clusters(self.partitions)
@@ -158,16 +167,25 @@ class MCbiF:
     def _compute_mcbif_bigrades_nerve(
         self,
         tqdm_disable=False,
+        precomp_mcf=None,
     ):
+        if precomp_mcf is not None:
+            assert precomp_mcf.method == "nerve", (
+                "Precomputed MCF must be of nerve type."
+            )
+            # if MCF was precomputed, use it
+            mcf = precomp_mcf.copy()
+            # prune MCF to max_dim
+            mcf.filtration_gudhi = mcf.filtration_gudhi.prune_above_dimension(self.max_dim)
 
-        print("Construct one-parameter filtration ...")
-
-        # compute one-parameter nerve-based MCF
-        mcf = MCF(max_dim=self.max_dim, method="nerve")
-        mcf.load_data(
-            partitions=self.partitions, filtration_indices=self.filtration_indices
-        )
-        mcf.build_filtration()
+        else:
+            print("Construct one-parameter filtration ...")
+            # compute one-parameter nerve-based MCF
+            mcf = MCF(max_dim=self.max_dim, method="nerve")
+            mcf.load_data(
+                partitions=self.partitions, filtration_indices=self.filtration_indices
+            )
+            mcf.build_filtration()
 
         # get list of clusters as frozensets
         partitions_clusters = _get_partition_clusters(self.partitions)
@@ -234,13 +252,13 @@ class MCbiF:
                 else:
                     break
 
-    def build_filtration(self, tqdm_disable=False):
+    def build_filtration(self, tqdm_disable=False, precomp_mcf=None):
         """Build MCbiF."""
         if self.method == "standard":
-            self._compute_mcbif_bigrades_standard(tqdm_disable=tqdm_disable)
+            self._compute_mcbif_bigrades_standard(tqdm_disable=tqdm_disable, precomp_mcf=precomp_mcf)
 
         elif self.method == "nerve":
-            self._compute_mcbif_bigrades_nerve(tqdm_disable=tqdm_disable)
+            self._compute_mcbif_bigrades_nerve(tqdm_disable=tqdm_disable, precomp_mcf=precomp_mcf)
 
     def compute_persistence(self, dimensions=None):
         """Compute multiparameter persistent homology of MCbiF using Rivet."""
@@ -302,11 +320,12 @@ class MCbiF:
     def compute_all_measures(
         self,
         path="mcbif_results.pkl",
+        precomp_mcf=None,
     ):
         """Construct MCbiF, compute PH and compute all derived measures."""
 
         # build filtration
-        self.build_filtration()
+        self.build_filtration(precomp_mcf=precomp_mcf)
 
         # compute multiparameter persistent homology
         self.compute_persistence()
@@ -319,6 +338,7 @@ class MCbiF:
         mcbif_results = {}
         mcbif_results["filtration_indices"] = self.filtration_indices
         mcbif_results["max_dim"] = self.max_dim
+        mcbif_results["method"] = self.method
         mcbif_results["betti_0"] = self.betti_0_
         mcbif_results["betti_0_rank"] = self.betti_0_rank_
         mcbif_results["betti_1"] = self.betti_1_
