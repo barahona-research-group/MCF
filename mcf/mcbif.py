@@ -319,7 +319,7 @@ class MCbiF:
 
     def compute_all_measures(
         self,
-        path="mcbif_results.pkl",
+        file_path="mcbif_results.pkl",
         precomp_mcf=None,
     ):
         """Construct MCbiF, compute PH and compute all derived measures."""
@@ -347,9 +347,9 @@ class MCbiF:
         mcbif_results["h_bar"] = self.h_bar_
         mcbif_results["c"] = self.c_
 
-        if not path is None:
+        if not file_path is None:
             # save results
-            save_results(mcbif_results, path)
+            save_results(mcbif_results, file_path)
 
         return mcbif_results
 
