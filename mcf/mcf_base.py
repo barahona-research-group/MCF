@@ -276,7 +276,8 @@ class MCF:
         mcf_results["c_2"] = c_2
         mcf_results["c"] = c
 
-        # save results
-        save_results(mcf_results, file_path)
+        if file_path is not None:
+            # save results
+            save_results(mcf_results, file_path)
 
         return mcf_results

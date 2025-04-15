@@ -95,10 +95,9 @@ class MCbiF:
                 "Precomputed MCF must be of standard type."
             )
             # if MCF was precomputed, use it
-            mcf = precomp_mcf.copy()
+            mcf_filtration_gudhi = precomp_mcf.filtration_gudhi.copy()
             # prune MCF to max_dim
-            mcf.filtration_gudhi = mcf.filtration_gudhi.prune_above_dimension(self.max_dim)
-
+            mcf_filtration_gudhi.prune_above_dimension(self.max_dim)
         else:
             print("Construct one-parameter filtration ...")
             # compute one-parameter MCF
@@ -107,6 +106,7 @@ class MCbiF:
                 partitions=self.partitions, filtration_indices=self.filtration_indices
             )
             mcf.build_filtration()
+            mcf_filtration_gudhi = mcf.filtration_gudhi
 
         # get list of clusters as frozensets
         partitions_clusters = _get_partition_clusters(self.partitions)
@@ -121,12 +121,12 @@ class MCbiF:
         s0 = self.filtration_indices[0]
 
         # extract bigrades (s_0,t(s_0)) where s_0 is the first critical value
-        for simplex, t_s0 in mcf.filtration_gudhi.get_filtration():
+        for simplex, t_s0 in mcf_filtration_gudhi.get_filtration():
             self.simplices.append(simplex)
             self.bigrades.append([(s0, t_s0)])
 
         # delete MCF object as not needed anymore
-        del mcf
+        del mcf_filtration_gudhi
 
         # iterate through all simplices
         for i, simplex in tqdm(
@@ -174,9 +174,9 @@ class MCbiF:
                 "Precomputed MCF must be of nerve type."
             )
             # if MCF was precomputed, use it
-            mcf = precomp_mcf.copy()
+            mcf_filtration_gudhi = precomp_mcf.filtration_gudhi.copy()
             # prune MCF to max_dim
-            mcf.filtration_gudhi = mcf.filtration_gudhi.prune_above_dimension(self.max_dim)
+            mcf_filtration_gudhi.prune_above_dimension(self.max_dim)
 
         else:
             print("Construct one-parameter filtration ...")
@@ -186,6 +186,7 @@ class MCbiF:
                 partitions=self.partitions, filtration_indices=self.filtration_indices
             )
             mcf.build_filtration()
+            mcf_filtration_gudhi = mcf.filtration_gudhi
 
         # get list of clusters as frozensets
         partitions_clusters = _get_partition_clusters(self.partitions)
@@ -200,12 +201,12 @@ class MCbiF:
         s0 = self.filtration_indices[0]
 
         # extract bigrades (s_0,t(s_0)) where s_0 is the first critical value
-        for simplex, t_s0 in mcf.filtration_gudhi.get_filtration():
+        for simplex, t_s0 in mcf_filtration_gudhi.get_filtration():
             self.simplices.append(simplex)
             self.bigrades.append([(s0, t_s0)])
 
         # delete MCF object as not needed anymore
-        del mcf
+        del mcf_filtration_gudhi
 
         # we compute cluster indices of new clusters per partition
         # and a dictionary that maps cluster indices to sets
