@@ -329,11 +329,26 @@ class MCbiF:
         self.build_filtration(precomp_mcf=precomp_mcf)
 
         # compute multiparameter persistent homology
-        self.compute_persistence()
+        try:
+            self.compute_persistence()
+        except:
+            print(
+                "Warning: Could not compute multiparameter persistent homology. "
+            )
 
         # compute persistent hierarchy and conflict
-        self.compute_persistent_hierarchy()
-        self.compute_persistent_conflict()
+        try:
+            self.compute_persistent_hierarchy()
+        except:
+            print(
+                "Warning: Could not compute persistent hierarchy. "
+            )
+        try:
+            self.compute_persistent_conflict()
+        except:
+            print(
+                "Warning: Could not compute persistent conflict. "
+            )
 
         # compile results dictionary
         mcbif_results = {}
