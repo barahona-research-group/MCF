@@ -88,7 +88,7 @@ We then analyse the MCF persistence diagrams, persistent hierarchy and persisten
 
 ## Contributors
 
-- Dominik Schindler, GitHub: `d-schindler <https://github.com/d-schindler>`
+- Dominik Schindler, GitHub: `juni-schindler <https://github.com/juni-schindler>`
 
 We always look out for individuals that are interested in contributing to this open-source project. Even if you are just using `LGDE` and made some minor updates, we would be interested in your input.
 
@@ -98,7 +98,7 @@ Please cite our paper if you use this code in your own work:
 
 ```
 @article{schindlerAnalysingMultiscaleClusterings2024,
-  author = {Schindler, Dominik J. and Barahona, Mauricio},
+  author = {Schindler, Juni and Barahona, Mauricio},
   title = {Analysing Multiscale Clusterings with Persistent Homology},
   publisher = {arXiv},
   year = {2024},
