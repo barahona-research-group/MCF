@@ -99,7 +99,8 @@ class MCbiF:
             # prune MCF to max_dim
             mcf_filtration_gudhi.prune_above_dimension(self.max_dim)
         else:
-            print("Construct one-parameter filtration ...")
+            if not tqdm_disable:
+                print("Construct one-parameter filtration ...")
             # compute one-parameter MCF
             mcf = MCF(max_dim=self.max_dim, method="standard")
             mcf.load_data(
@@ -111,7 +112,8 @@ class MCbiF:
         # get list of clusters as frozensets
         partitions_clusters = _get_partition_clusters(self.partitions)
 
-        print("Construct two-parameter filtration ...")
+        if not tqdm_disable:
+            print("Construct two-parameter filtration ...")
 
         # initialise list of simplices and bigrades
         self.simplices = []
@@ -179,19 +181,21 @@ class MCbiF:
             mcf_filtration_gudhi.prune_above_dimension(self.max_dim)
 
         else:
-            print("Construct one-parameter filtration ...")
+            if not tqdm_disable:
+                print("Construct one-parameter filtration ...")
             # compute one-parameter nerve-based MCF
             mcf = MCF(max_dim=self.max_dim, method="nerve")
             mcf.load_data(
                 partitions=self.partitions, filtration_indices=self.filtration_indices
             )
-            mcf.build_filtration()
+            mcf.build_filtration(tqdm_disable=tqdm_disable)
             mcf_filtration_gudhi = mcf.filtration_gudhi
 
         # get list of clusters as frozensets
         partitions_clusters = _get_partition_clusters(self.partitions)
-
-        print("Construct two-parameter filtration ...")
+        
+        if not tqdm_disable:
+            print("Construct two-parameter filtration ...")
 
         # initialise list of simplices and bigrades
         self.simplices = []
@@ -261,7 +265,7 @@ class MCbiF:
         elif self.method == "nerve":
             self._compute_mcbif_bigrades_nerve(tqdm_disable=tqdm_disable, precomp_mcf=precomp_mcf)
 
-    def compute_persistence(self, dimensions=None):
+    def compute_persistence(self, dimensions=None, tqdm_disable=False):
         """Compute multiparameter persistent homology of MCbiF using Rivet."""
 
         from pyrivet import rivet
@@ -285,14 +289,16 @@ class MCbiF:
             ), f"Max filtartion dimension was set to {self.max_dim}."
             # compute 0 dimension
             if d == 0:
-                print("Compute 0-dim MPH ...")
+                if not tqdm_disable:
+                    print("Compute 0-dim MPH ...")
                 self.betti_0_ = rivet.betti(bifiltration, homology=0)
                 # we rotate the graded rank matrix by 90 degrees
                 self.betti_0_rank_ = np.rot90(self.betti_0_.graded_rank)
 
             # compute 1 dimension
             if d == 1:
-                print("Compute 1-dim MPH ...")
+                if not tqdm_disable:
+                    print("Compute 1-dim MPH ...")
                 self.betti_1_ = rivet.betti(bifiltration, homology=1)
                 # we rotate the graded rank matrix by 90 degrees
                 self.betti_1_rank_ = np.rot90(self.betti_1_.graded_rank)
@@ -322,33 +328,43 @@ class MCbiF:
         self,
         file_path="mcbif_results.pkl",
         precomp_mcf=None,
+        tqdm_disable=False,
     ):
         """Construct MCbiF, compute PH and compute all derived measures."""
 
         # build filtration
-        self.build_filtration(precomp_mcf=precomp_mcf)
+        self.build_filtration(precomp_mcf=precomp_mcf, tqdm_disable=tqdm_disable)
 
         # compute multiparameter persistent homology
         try:
-            self.compute_persistence()
+            self.compute_persistence(tqdm_disable=tqdm_disable)
         except:
-            print(
-                "Warning: Could not compute multiparameter persistent homology. "
-            )
-
+            if tqdm_disable:
+                pass
+            else:
+                print(
+                    "Warning: Could not compute multiparameter persistent homology. "
+                )
+                
         # compute persistent hierarchy and conflict
         try:
             self.compute_persistent_hierarchy()
         except:
-            print(
-                "Warning: Could not compute persistent hierarchy. "
-            )
+            if tqdm_disable:
+                pass
+            else:
+                print(
+                    "Warning: Could not compute persistent hierarchy. "
+                )
         try:
             self.compute_persistent_conflict()
         except:
-            print(
-                "Warning: Could not compute persistent conflict. "
-            )
+            if tqdm_disable:
+                pass
+            else:
+                print(
+                    "Warning: Could not compute persistent conflict. "
+                )
 
         # compile results dictionary
         mcbif_results = {}
@@ -362,6 +378,8 @@ class MCbiF:
         mcbif_results["h"] = self.h_
         mcbif_results["h_bar"] = self.h_bar_
         mcbif_results["c"] = self.c_
+        mcbif_results["n_simplices"] = self.n_simplices
+        mcbif_results["n_bigrades"] = self.n_bigrades
 
         if not file_path is None:
             # save results
