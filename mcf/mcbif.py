@@ -5,6 +5,8 @@ import numpy as np
 
 from tqdm import tqdm
 
+from pyrivet import rivet
+
 from mcf import MCF
 from mcf.io import save_results
 from mcf.utils import _get_partition_clusters, _cluster_id_preprocessing
@@ -265,10 +267,8 @@ class MCbiF:
         elif self.method == "nerve":
             self._compute_mcbif_bigrades_nerve(tqdm_disable=tqdm_disable, precomp_mcf=precomp_mcf)
 
-    def compute_persistence(self, dimensions=None, tqdm_disable=False):
+    def compute_persistence(self, dimensions=None, tqdm_disable=False, threads=1):
         """Compute multiparameter persistent homology of MCbiF using Rivet."""
-
-        from pyrivet import rivet
 
         if dimensions is None:
             dimensions = np.arange(0, self.max_dim)
@@ -291,7 +291,7 @@ class MCbiF:
             if d == 0:
                 if not tqdm_disable:
                     print("Compute 0-dim MPH ...")
-                self.betti_0_ = rivet.betti(bifiltration, homology=0)
+                self.betti_0_ = rivet.betti(bifiltration, homology=0, threads=threads)
                 # we rotate the graded rank matrix by 90 degrees
                 self.betti_0_rank_ = np.rot90(self.betti_0_.graded_rank)
 
@@ -299,7 +299,7 @@ class MCbiF:
             if d == 1:
                 if not tqdm_disable:
                     print("Compute 1-dim MPH ...")
-                self.betti_1_ = rivet.betti(bifiltration, homology=1)
+                self.betti_1_ = rivet.betti(bifiltration, homology=1, threads=threads)
                 # we rotate the graded rank matrix by 90 degrees
                 self.betti_1_rank_ = np.rot90(self.betti_1_.graded_rank)
                 # add 0 columns when not square
@@ -329,6 +329,7 @@ class MCbiF:
         file_path="mcbif_results.pkl",
         precomp_mcf=None,
         tqdm_disable=False,
+        threads=1,
     ):
         """Construct MCbiF, compute PH and compute all derived measures."""
 
@@ -337,7 +338,7 @@ class MCbiF:
 
         # compute multiparameter persistent homology
         try:
-            self.compute_persistence(tqdm_disable=tqdm_disable)
+            self.compute_persistence(tqdm_disable=tqdm_disable, threads=threads)
         except:
             if tqdm_disable:
                 pass

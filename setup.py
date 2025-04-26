@@ -14,6 +14,7 @@ setup(
         "numpy",
         "gudhi",    
         "tqdm",
+        'pyrivet @ git+https://github.com/juni-schindler/rivet-python.git'
     ],
     zip_safe=False,
     packages=find_packages(),
