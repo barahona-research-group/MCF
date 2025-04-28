@@ -473,7 +473,7 @@ class MCbiF:
         if not path is None:
             plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
 
-        plt.show()
+        return ax
 
     def plot_persistent_conflict(self, path=None, title=None):
         """Plot persistent conflict."""
@@ -540,8 +540,8 @@ class MCbiF:
         if not path is None:
             plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
 
-        plt.show()
-
+        return ax
+    
     def plot_persistent_hierarchy(self, path=None, title=None):
         """Plot persistent hierarchy."""
         # shade lower diagonal part
@@ -598,7 +598,7 @@ class MCbiF:
         if not path is None:
             plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
 
-        plt.show()
+        return ax
 
 
 def _expand_hf(hf):
