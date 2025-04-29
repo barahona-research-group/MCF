@@ -96,7 +96,7 @@ We then analyse the MCF persistence diagrams, persistent hierarchy and persisten
 
 - Juni Schindler, GitHub: `juni-schindler <https://github.com/juni-schindler>`
 
-We always look out for individuals that are interested in contributing to this open-source project. Even if you are just using `LGDE` and made some minor updates, we would be interested in your input.
+We always look out for individuals that are interested in contributing to this open-source project. Even if you are just using `MCF` and made some minor updates, we would be interested in your input.
 
 ## Cite
 
