@@ -2,21 +2,27 @@
 
 # MCF: Multiscale Clustering Filtration
 
-This repository provides a Python implementation of the *Multiscale Clustering Filtration* (MCF) to analyse (non-hierarchical) sequences of partitions with persistent homology using `gudhi`. It is based on the paper "Analysing Multiscale Clusterings with Persistent Homology" by Dominik J. Schindler and Mauricio Barahona: https://arxiv.org/abs/2305.04281.
+This repository provides a Python implementation of the *Multiscale Clustering Filtration* (MCF) to analyse (non-hierarchical) sequences of partitions with persistent homology using `gudhi`. It is based on the paper "Analysing Multiscale Clusterings with Persistent Homology" by Juni Schindler and Mauricio Barahona: https://arxiv.org/abs/2305.04281.
 
 
 ## Installation
 Clone the repository and open the folder in your terminal. 
 
-```bash
-$ git clone https://github.com/barahona-research-group/MCF.git
-$ cd MCF/
+```zsh
+git clone https://github.com/barahona-research-group/MCF.git
+cd MCF/
 ```
 
 Then, to install the package with ``pip``, execute the following command:
 
-```bash
-$ pip install .
+```zsh
+pip install .
+```
+
+To install the package with support for *Multiscale Clustering bi-Filfration* (MCbiF), execute instead:
+
+```zsh
+pip install ."[rivet]" 
 ```
 
 ## Using the code
@@ -88,7 +94,7 @@ We then analyse the MCF persistence diagrams, persistent hierarchy and persisten
 
 ## Contributors
 
-- Dominik Schindler, GitHub: `juni-schindler <https://github.com/juni-schindler>`
+- Juni Schindler, GitHub: `juni-schindler <https://github.com/juni-schindler>`
 
 We always look out for individuals that are interested in contributing to this open-source project. Even if you are just using `LGDE` and made some minor updates, we would be interested in your input.
 
