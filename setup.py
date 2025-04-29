@@ -5,6 +5,7 @@ from setuptools import setup
 
 __version__ = "0.0.6"
 
+
 setup(
     name="MCF",
     version=__version__,
@@ -13,10 +14,12 @@ setup(
         "matplotlib",
         "numpy",
         "gudhi",    
-        "tqdm",
-        'pyrivet @ git+https://github.com/juni-schindler/rivet-python.git'
+        "tqdm"
     ],
     zip_safe=False,
+    extras_require={
+        "rivet": ['pyrivet @ git+https://github.com/juni-schindler/rivet-python.git'],
+    },
     packages=find_packages(),
     include_package_data=True,
 )

@@ -5,8 +5,6 @@ import numpy as np
 
 from tqdm import tqdm
 
-from pyrivet import rivet
-
 from mcf import MCF
 from mcf.io import save_results
 from mcf.utils import _get_partition_clusters, _cluster_id_preprocessing
@@ -269,6 +267,12 @@ class MCbiF:
 
     def compute_persistence(self, dimensions=None, tqdm_disable=False, threads=1):
         """Compute multiparameter persistent homology of MCbiF using Rivet."""
+
+        try:
+            from pyrivet import rivet
+        except ImportError:
+            raise ImportError("Pyrivet is not installed.")
+
 
         if dimensions is None:
             dimensions = np.arange(0, self.max_dim)
