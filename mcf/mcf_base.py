@@ -58,6 +58,11 @@ class MCF:
     def n_partitions(self):
         """ "Computes number of partitions in sequence."""
         return len(self.partitions)
+    
+    @property
+    def n_simplices(self):
+        """Computes number of simplices in MCF."""
+        return self.filtration_gudhi.num_simplices()
 
     def load_data(self, partitions, filtration_indices=[]):
         """Method to load sequence of partitions and
@@ -233,11 +238,12 @@ class MCF:
     def compute_all_measures(
         self,
         file_path="mcf_results.pkl",
+        tqdm_disable=False,
     ):
         """Construct MCF, compute PH and compute all derived measures."""
 
         # build filtration
-        self.build_filtration()
+        self.build_filtration(tqdm_disable=tqdm_disable)
 
         # compute persistent homology
         self.compute_persistence()
@@ -262,8 +268,10 @@ class MCF:
 
         # compile results dictionary
         mcf_results = {}
+        mcf_results["n_simplices"] = self.n_simplices
         mcf_results["filtration_indices"] = self.filtration_indices
         mcf_results["max_dim"] = self.max_dim
+        mcf_results["method"] = self.method
         mcf_results["persistence"] = persistence
         mcf_results["betti_0"] = betti_0
         mcf_results["betti_1"] = betti_1
@@ -275,7 +283,8 @@ class MCF:
         mcf_results["c_2"] = c_2
         mcf_results["c"] = c
 
-        # save results
-        save_results(mcf_results, file_path)
+        if file_path is not None:
+            # save results
+            save_results(mcf_results, file_path)
 
         return mcf_results
