@@ -2,18 +2,19 @@
 
 import itertools
 import gudhi as gd
+import matplotlib.pyplot as plt
 import numpy as np
 
 from tqdm import tqdm
 
-from mcf.io import save_results
+from mcf.io import load_results, save_results
 from mcf.measures import (
     compute_bettis,
     compute_partition_size,
     compute_persistent_hierarchy,
     compute_persistent_conflict,
 )
-from mcf.utils import node_id_to_dict, _cluster_id_preprocessing
+from mcf.utils import node_id_to_dict, _cluster_id_preprocessing, _moving_average
 from mcf.plotting import plot_sankey, plot_pd
 
 
@@ -54,6 +55,21 @@ class MCF:
         # initialise persistent homology attribute
         self.persistence = []
 
+        # initialise Betti curves
+        self.betti_0_rank_ = None
+        self.betti_1_rank_ = None
+        self.betti_2_rank_ = None
+
+        # initialise partition size
+        self.s_partitions_ = None
+
+        # initialse persistent hierarchy and conflict
+        self.h_ = None
+        self.h_bar_ = None
+        self.c_ = None
+        self.c_1_ = None
+        self.c_2_ = None
+
     @property
     def n_partitions(self):
         """ "Computes number of partitions in sequence."""
@@ -64,16 +80,38 @@ class MCF:
         """Computes number of simplices in MCF."""
         return self.filtration_gudhi.num_simplices()
 
-    def load_data(self, partitions, filtration_indices=[]):
+    def load_data(self, partitions, filtration_indices=None):
         """Method to load sequence of partitions and
         filtration indices."""
         self.partitions = partitions
 
-        if len(filtration_indices) > 0:
-            self.filtration_indices = filtration_indices
-        else:
+        if filtration_indices is None:
             # if no filtration indices are given use enumeration
             self.filtration_indices = np.arange(1, self.n_partitions + 1)
+        else:
+            self.filtration_indices = filtration_indices
+
+    def load_data_from_file(self, file_path):
+        """Method to load data from precomputed MCF file."""
+
+        # load results dictionary
+        mcf_results = load_results(file_path)
+
+        # unpack dictionary
+        self.filtration_indices = mcf_results["filtration_indices"]
+        self.max_dim = mcf_results["max_dim"]
+        self.method = mcf_results["method"]
+        self.persistence = mcf_results["persistence"]
+        self.betti_0_rank_ = mcf_results["betti_0"]
+        self.betti_1_rank_ = mcf_results["betti_1"]
+        self.betti_2_rank_ = mcf_results["betti_2"]
+        self.s_partitions_ = mcf_results["s_partitions"]
+        self.h_ = mcf_results["h"]
+        self.h_bar_ = mcf_results["h_bar"]
+        self.c_1_ = mcf_results["c_1"]
+        self.c_2_ = mcf_results["c_2"]
+        self.c_ = mcf_results["c"]
+           
 
     def _build_filtration_standard(self, tqdm_disable=False):
         """Construct MCF via standard method."""
@@ -204,8 +242,8 @@ class MCF:
         # summarise persistence
         self.persistence = []
         for i in range(self.max_dim):
-            PD = self.filtration_gudhi.persistence_intervals_in_dimension(i)
-            self.persistence.append(PD)
+            persistence_diagram = self.filtration_gudhi.persistence_intervals_in_dimension(i)
+            self.persistence.append(persistence_diagram)
 
     def plot_pd(self, alpha=0.5, marker_size=None):
         """Plot MCF persistence diagram."""
@@ -218,21 +256,30 @@ class MCF:
     def compute_bettis(self):
         """Compute Betti curves of MCF."""
         betti_0, betti_1, betti_2 = compute_bettis(self)
+        self.betti_0_rank_ = betti_0
+        self.betti_1_rank_ = betti_1
+        self.betti_2_rank_ = betti_2
         return betti_0, betti_1, betti_2
 
     def compute_partition_size(self):
         """Compute size of partitions."""
         s_partitions = compute_partition_size(self)
+        self.s_partitions_ = s_partitions
         return s_partitions
 
     def compute_persistent_hierarchy(self):
         """Compute persistent hierarchy."""
         h, h_bar = compute_persistent_hierarchy(self)
+        self.h_ = h
+        self.h_bar_ = h_bar
         return h, h_bar
-
+    
     def compute_persistent_conflict(self):
         """Compute persistent conflict."""
         c_1, c_2, c = compute_persistent_conflict(self)
+        self.c_1_ = c_1
+        self.c_2_ = c_2
+        self.c_ = c
         return c_1, c_2, c
 
     def compute_all_measures(
@@ -255,16 +302,16 @@ class MCF:
         ]
 
         # compute Betti numbers
-        betti_0, betti_1, betti_2 = self.compute_bettis()
+        self.compute_bettis()
 
         # compute size of partitions
-        s_partitions = self.compute_partition_size()
+        self.compute_partition_size()
 
         # compute persistent hierarchy
-        h, h_bar = self.compute_persistent_hierarchy()
+        self.compute_persistent_hierarchy()
 
         # compute persistent conflict
-        c_1, c_2, c = self.compute_persistent_conflict()
+        self.compute_persistent_conflict()
 
         # compile results dictionary
         mcf_results = {}
@@ -272,19 +319,78 @@ class MCF:
         mcf_results["filtration_indices"] = self.filtration_indices
         mcf_results["max_dim"] = self.max_dim
         mcf_results["method"] = self.method
-        mcf_results["persistence"] = persistence
-        mcf_results["betti_0"] = betti_0
-        mcf_results["betti_1"] = betti_1
-        mcf_results["betti_2"] = betti_2
-        mcf_results["s_partitions"] = s_partitions
-        mcf_results["h"] = h
-        mcf_results["h_bar"] = h_bar
-        mcf_results["c_1"] = c_1
-        mcf_results["c_2"] = c_2
-        mcf_results["c"] = c
+        mcf_results["persistence"] = self.persistence
+        mcf_results["betti_0"] = self.betti_0_rank_
+        mcf_results["betti_1"] = self.betti_1_rank_
+        mcf_results["betti_2"] = self.betti_2_rank_
+        mcf_results["s_partitions"] = self.s_partitions_
+        mcf_results["h"] = self.h_
+        mcf_results["h_bar"] = self.h_bar_
+        mcf_results["c_1"] = self.c_1_
+        mcf_results["c_2"] = self.c_2_
+        mcf_results["c"] = self.c_
 
         if file_path is not None:
             # save results
             save_results(mcf_results, file_path)
 
         return mcf_results
+    
+
+    def plot_persistent_conflict(self, path=None, title=None, window_size=1):
+        """Plot persistent conflict."""
+
+        colormap = plt.cm.Set1.colors
+
+        fig, axs = plt.subplots(2, figsize=(8, 7))
+        fig.subplots_adjust(hspace=0.0, wspace=0.3)
+        ax1 = axs[0]
+        ax2 = axs[1]
+        ax1.plot(self.filtration_indices,self.betti_1_rank_, label = r'$\beta_1^t$', color=colormap[1])
+        ax1.plot(self.filtration_indices,self.betti_2_rank_, label = r'$\beta_2^t$',color=colormap[2])
+        ax1.set(xticks=[],xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
+        ax1.legend(loc=0)
+
+        if window_size > 1:
+            ax2.plot(self.filtration_indices,self.c_,c=colormap[4],ls=":")
+            ax2.plot(self.filtration_indices,_moving_average(self.c_,window_size),c=colormap[4])
+        elif window_size == 1:
+            ax2.plot(self.filtration_indices,self.c_,c=colormap[4])
+        ax2.set_ylabel(r'$c(t)$')
+        ax2.set(xlabel=r'$t$',xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
+        
+        if not title is None:
+            ax1.set(title=title)
+
+        if not path is None:
+            plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
+
+        return axs
+
+
+    def plot_persistent_hierarchy(self, path=None, title=None):
+        """Plot persistent hierarchy."""
+
+        colormap = plt.cm.Set1.colors
+
+        fig, axs = plt.subplots(2, figsize=(8, 7))
+        fig.subplots_adjust(hspace=0.0, wspace=0.3)
+        ax1 = axs[0]
+        ax2 = axs[1]
+        ax1.plot(self.filtration_indices,self.s_partitions_, label = r'$\#\theta(t)$', color=colormap[6])
+
+        ax1.plot(self.filtration_indices,self.betti_0_rank_, label = r'$\beta_0^t$', color=colormap[0])
+        ax1.set(xticks=[],xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
+        ax1.legend(loc=0)
+        ax2.plot(self.filtration_indices,self.h_, label = r'$h(t)$',c=colormap[3])
+        ax2.set_ylabel(r'$h(t)$')
+        ax2.set(xlabel=r'$t$',ylim=(-0.1,1.1),xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
+
+        if not title is None:
+            ax1.set(title=title)
+
+        if not path is None:
+            plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
+
+        return axs
+

@@ -1,6 +1,7 @@
 """Utils to process partition data."""
 
 import numpy as np
+import pandas as pd
 
 
 def node_id_to_dict(node_id):
@@ -72,3 +73,10 @@ def _cluster_id_preprocessing(partitions):
         partitions_c_ind.append(np.arange(n_clusters_before, n_clusters_total))
 
     return partitions_c_ind, ind_to_c
+
+def _moving_average(x, w):
+    """Computes moving average for given window size (from MCF repo)."""
+    return np.roll(
+        np.asarray(pd.Series(x).rolling(window=w, win_type="triang").mean()),
+        -int(w / 2),
+    )
