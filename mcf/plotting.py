@@ -107,7 +107,7 @@ def plot_sankey(
     return fig
 
 
-def plot_pd(mcf, alpha=0.5, marker_size=None):
+def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$"):
     """
     Code is a modified version of the GUDHI's plot_persistence_diagram.
 
@@ -168,8 +168,8 @@ def plot_pd(mcf, alpha=0.5, marker_size=None):
 
     # labels and axes limits
     ax.set(
-        xlabel="Birth",
-        ylabel="Death",
+        xlabel=f"{scale_label} [Birth]",
+        ylabel=f"{scale_label} [Death]",
         xlim=(tmin - 0.5 * delta, tmax),
         ylim=(tmin, infinity + 0.5 * delta),
     )

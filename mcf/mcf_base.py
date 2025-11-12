@@ -245,9 +245,9 @@ class MCF:
             persistence_diagram = self.filtration_gudhi.persistence_intervals_in_dimension(i)
             self.persistence.append(persistence_diagram)
 
-    def plot_pd(self, alpha=0.5, marker_size=None):
+    def plot_pd(self, alpha=0.5, marker_size=None, scale_label="$t$"):
         """Plot MCF persistence diagram."""
-        return plot_pd(self, alpha, marker_size)
+        return plot_pd(self, alpha, marker_size, scale_label)
 
     def plot_sankey(self, step=1, color=True, alpha=0.5, pad=0.1, thickness=1):
         """Plot Sankey diagram of partitions."""

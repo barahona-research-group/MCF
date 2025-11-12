@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib.colors import ListedColormap
 from tqdm import tqdm
 
 from mcf import MCF
@@ -135,7 +136,7 @@ class MCbiF:
             mcf.load_data(
                 partitions=self.partitions, filtration_indices=self.filtration_indices
             )
-            mcf.build_filtration()
+            mcf.build_filtration(tqdm_disable=tqdm_disable)
             mcf_filtration_gudhi = mcf.filtration_gudhi
 
         # get list of clusters as frozensets
@@ -444,9 +445,9 @@ class MCbiF:
         )
         # compute persistent hierarchy
         self.h_ = self.betti_0_rank_ / s_partitions
-        # compute average persistent hierarchy
-        self.h_bar_ = np.triu(self.h_).sum() / (
-            self.n_partitions * (self.n_partitions + 1) / 2
+        # compute average persistent hierarchy (exclude 1s on diagonal)
+        self.h_bar_ = np.triu(self.h_, 1).sum() / (
+            self.n_partitions * (self.n_partitions - 1) / 2
         )
 
     def compute_persistent_conflict(self):
@@ -574,18 +575,112 @@ class MCbiF:
         """Plot Sankey diagram of partitions."""
         return plot_sankey(self, step, color, alpha, pad, thickness)
 
-    def plot_hilbert_function(self, dimension=0, path=None, title=None):
+    # def plot_hilbert_function(self, dimension=0, path=None, title=None, vmax=None, discrete_ticks=None):
+    #     """Plot Hilbert function."""
+    #     assert (
+    #         dimension <= self.max_dim - 1
+    #     ), f"Max filtartion dimension was set to {self.max_dim}."
+
+    #     if dimension == 0:
+    #         hf = self.betti_0_rank_.copy()
+    #     elif dimension == 1:
+    #         hf = self.betti_1_rank_.copy()
+
+    #     # shade lower diagonal part
+    #     shade_lowtri = np.ones_like(hf)
+    #     shade_lowtri[np.tril_indices_from(shade_lowtri, k=0)] = np.nan
+    #     shade_lowtri = shade_lowtri.T
+
+    #     fig, ax = plt.subplots(1, figsize=(7, 7))
+
+    #     d_extent = abs(self.filtration_indices[-1] - self.filtration_indices[0]) / (
+    #         2 * self.n_partitions
+    #     )
+    #     extent = [
+    #         self.filtration_indices[0] - d_extent,
+    #         self.filtration_indices[-1] + d_extent,
+    #         self.filtration_indices[-1] + d_extent,
+    #         self.filtration_indices[0] - d_extent,
+    #     ]
+
+    #     if dimension == 0:
+    #         cmap = "Reds"
+    #     elif dimension == 1:
+    #         cmap = "Blues"
+
+    #     if vmax is None:
+    #         vmax = np.nanmax(hf)
+
+    #     im = ax.imshow(
+    #         hf,
+    #         cmap=cmap,
+    #         vmin=0,
+    #         vmax=vmax,
+    #         extent=extent,
+    #         interpolation="none",
+    #     )
+
+    #     if dimension == 1:
+    #         # plot white
+    #         white_0 = np.ones_like(hf)
+    #         white_0[hf > 0] = np.nan
+    #         ax.imshow(white_0, cmap="binary", extent=extent, interpolation="none")
+
+    #     # plot shading
+    #     ax.imshow(
+    #         shade_lowtri,
+    #         cmap="grey",
+    #         vmin=0,
+    #         vmax=2,
+    #         extent=extent,
+    #         interpolation="none",
+    #     )
+
+    #     # Set the same tick labels for the x-axis
+    #     plt.xticks(plt.yticks()[0], plt.yticks()[1])
+
+    #     ax.set(
+    #         xlabel=r"$t$",
+    #         ylabel=r"$s$",
+    #         xlim=(
+    #             self.filtration_indices[0] - d_extent,
+    #             self.filtration_indices[-1] + d_extent,
+    #         ),
+    #         ylim=(
+    #             self.filtration_indices[-1] + d_extent,
+    #             self.filtration_indices[0] - d_extent,
+    #         ),
+    #     )
+
+    #     if dimension == 0:
+    #         label_cbar = r"$\mathrm{HF}_0(s,t)$"
+    #     elif dimension == 1:
+    #         label_cbar = r"$\mathrm{HF}_1(s,t)$"
+    #     cbar = plt.colorbar(im, shrink=0.4, label=label_cbar, location="top", pad=0.03)
+
+    #     if not discrete_ticks is None:
+    #         cbar.set_ticks(discrete_ticks)
+
+    #     if not title is None:
+    #         fig.suptitle(title)
+
+    #     if not path is None:
+    #         plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
+
+    #     return ax
+
+    def plot_hilbert_function(self, dimension=0, path=None, title=None, vmax=None, discrete_ticks=None):
         """Plot Hilbert function."""
         assert (
             dimension <= self.max_dim - 1
-        ), f"Max filtartion dimension was set to {self.max_dim}."
+        ), f"Max filtration dimension was set to {self.max_dim}."
 
         if dimension == 0:
             hf = self.betti_0_rank_.copy()
         elif dimension == 1:
             hf = self.betti_1_rank_.copy()
 
-        # shade lower diagonal part
+        # Shade lower diagonal part
         shade_lowtri = np.ones_like(hf)
         shade_lowtri[np.tril_indices_from(shade_lowtri, k=0)] = np.nan
         shade_lowtri = shade_lowtri.T
@@ -602,26 +697,45 @@ class MCbiF:
             self.filtration_indices[0] - d_extent,
         ]
 
-        if dimension == 0:
-            cmap = "Reds"
-        elif dimension == 1:
-            cmap = "Blues"
-        im = ax.imshow(
-            hf,
-            cmap=cmap,
-            vmin=0,
-            vmax=np.nanmax(hf),
-            extent=extent,
-            interpolation="none",
-        )
+        # Choose colormap based on dimension
+        cmap = plt.get_cmap("Reds") if dimension == 0 else plt.get_cmap("Blues")
+
+        if vmax is None:
+            vmax = np.nanmax(hf)
+
+        if discrete_ticks is not None:
+
+            # Create discrete color mapping if discrete_ticks is specified
+            num_colors = len(discrete_ticks) if discrete_ticks is not None else 1
+            colors = cmap(np.linspace(0, 1, num_colors))
+            discrete_cmap = ListedColormap(colors)
+
+            im = ax.imshow(
+                hf,
+                cmap=discrete_cmap,
+                vmin=0,
+                vmax=num_colors - 1,
+                extent=extent,
+                interpolation="none",
+            )
+        
+        else:
+            im = ax.imshow(
+                hf,
+                cmap=cmap,
+                vmin=0,
+                vmax=vmax,
+                extent=extent,
+                interpolation="none",
+            )
 
         if dimension == 1:
-            # plot white
+            # Plot white
             white_0 = np.ones_like(hf)
             white_0[hf > 0] = np.nan
             ax.imshow(white_0, cmap="binary", extent=extent, interpolation="none")
 
-        # plot shading
+        # Plot shading
         ax.imshow(
             shade_lowtri,
             cmap="grey",
@@ -651,12 +765,19 @@ class MCbiF:
             label_cbar = r"$\mathrm{HF}_0(s,t)$"
         elif dimension == 1:
             label_cbar = r"$\mathrm{HF}_1(s,t)$"
-        plt.colorbar(im, shrink=0.4, label=label_cbar, location="top", pad=0.03)
+        
+        cbar = plt.colorbar(im, shrink=0.4, label=label_cbar, location="top", pad=0.03)
 
-        if not title is None:
+        if discrete_ticks is not None:
+            tick_offset = (num_colors - 1) / (2 * num_colors)
+            tick_positions = np.linspace(tick_offset, num_colors - 1 - tick_offset, num_colors)  # Centering tick positions
+            cbar.set_ticks(tick_positions)
+            cbar.set_ticklabels(discrete_ticks)
+
+        if title is not None:
             fig.suptitle(title)
 
-        if not path is None:
+        if path is not None:
             plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
 
         return ax
