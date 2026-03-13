@@ -10,15 +10,13 @@ from tqdm import tqdm
 from mcf.io import load_results, save_results
 from mcf.measures import (
     compute_bettis,
-    compute_partition_size,
-    compute_persistent_hierarchy,
-    compute_persistent_conflict,
+    compute_k_conflict_difference,
 )
 from mcf.utils import node_id_to_dict, _cluster_id_preprocessing, _moving_average
 from mcf.plotting import plot_sankey, plot_pd
 
 
-class MCF:
+class MultiscaleClusteringFiltration:
     """Main class to construct MCF from a sequence of partitions and analyse
     its persistent homology."""
 
@@ -64,17 +62,17 @@ class MCF:
         self.s_partitions_ = None
 
         # initialse persistent hierarchy and conflict
-        self.h_ = None
-        self.h_bar_ = None
-        self.c_ = None
-        self.c_1_ = None
-        self.c_2_ = None
+        self.conflict_0_ = None
+        self.conflict_0_avg_ = None
+        self.conflict_total_diff_ = None
+        self.conflict_1_diff_ = None
+        self.conflict_2_diff_ = None
 
     @property
     def n_partitions(self):
         """ "Computes number of partitions in sequence."""
         return len(self.partitions)
-    
+
     @property
     def n_simplices(self):
         """Computes number of simplices in MCF."""
@@ -106,12 +104,11 @@ class MCF:
         self.betti_1_rank_ = mcf_results["betti_1"]
         self.betti_2_rank_ = mcf_results["betti_2"]
         self.s_partitions_ = mcf_results["s_partitions"]
-        self.h_ = mcf_results["h"]
-        self.h_bar_ = mcf_results["h_bar"]
-        self.c_1_ = mcf_results["c_1"]
-        self.c_2_ = mcf_results["c_2"]
-        self.c_ = mcf_results["c"]
-           
+        self.conflict_0_ = mcf_results["conflict_0"]
+        self.conflict_0_avg_ = mcf_results["conflict_0_avg"]
+        self.conflict_1_diff_ = mcf_results["conflict_1_diff"]
+        self.conflict_2_diff_ = mcf_results["conflict_2_diff"]
+        self.conflict_total_diff_ = mcf_results["conflict_total_diff"]
 
     def _build_filtration_standard(self, tqdm_disable=False):
         """Construct MCF via standard method."""
@@ -242,7 +239,9 @@ class MCF:
         # summarise persistence
         self.persistence = []
         for i in range(self.max_dim):
-            persistence_diagram = self.filtration_gudhi.persistence_intervals_in_dimension(i)
+            persistence_diagram = (
+                self.filtration_gudhi.persistence_intervals_in_dimension(i)
+            )
             self.persistence.append(persistence_diagram)
 
     def plot_pd(self, alpha=0.5, marker_size=None, scale_label="$t$"):
@@ -263,24 +262,29 @@ class MCF:
 
     def compute_partition_size(self):
         """Compute size of partitions."""
-        s_partitions = compute_partition_size(self)
-        self.s_partitions_ = s_partitions
-        return s_partitions
+        self.s_partitions_ = np.asarray(
+            [len(np.unique(self.partitions[i])) for i in range(self.n_partitions)]
+        )
 
-    def compute_persistent_hierarchy(self):
+    def compute_0_conflict(self):
         """Compute persistent hierarchy."""
-        h, h_bar = compute_persistent_hierarchy(self)
-        self.h_ = h
-        self.h_bar_ = h_bar
-        return h, h_bar
-    
-    def compute_persistent_conflict(self):
+
+        if self.betti_0_rank_ is None:
+            self.compute_bettis()
+
+        if self.s_partitions_ is None:
+            self.compute_partition_size()
+
+        self.conflict_0_ = 1 - self.betti_0_rank_ / self.s_partitions_
+        # TODO: take into account non-equidistant filtration indices
+        self.conflict_0_avg_ = np.mean(self.conflict_0_[:-1])
+
+    def compute_k_conflict_difference(self):
         """Compute persistent conflict."""
-        c_1, c_2, c = compute_persistent_conflict(self)
-        self.c_1_ = c_1
-        self.c_2_ = c_2
-        self.c_ = c
-        return c_1, c_2, c
+        c_1, c_2, c = compute_k_conflict_difference(self)
+        self.conflict_1_diff_ = c_1
+        self.conflict_2_diff_ = c_2
+        self.conflict_total_diff_ = c
 
     def compute_all_measures(
         self,
@@ -296,7 +300,7 @@ class MCF:
         self.compute_persistence()
 
         # obtain persistence
-        persistence = [
+        self.persistence = [
             self.filtration_gudhi.persistence_intervals_in_dimension(dim)
             for dim in range(self.max_dim)
         ]
@@ -307,11 +311,11 @@ class MCF:
         # compute size of partitions
         self.compute_partition_size()
 
-        # compute persistent hierarchy
-        self.compute_persistent_hierarchy()
+        # compute 0 conflict measures
+        self.compute_0_conflict()
 
-        # compute persistent conflict
-        self.compute_persistent_conflict()
+        # compute k conflict measures
+        self.compute_k_conflict_difference()
 
         # compile results dictionary
         mcf_results = {}
@@ -324,20 +328,19 @@ class MCF:
         mcf_results["betti_1"] = self.betti_1_rank_
         mcf_results["betti_2"] = self.betti_2_rank_
         mcf_results["s_partitions"] = self.s_partitions_
-        mcf_results["h"] = self.h_
-        mcf_results["h_bar"] = self.h_bar_
-        mcf_results["c_1"] = self.c_1_
-        mcf_results["c_2"] = self.c_2_
-        mcf_results["c"] = self.c_
+        mcf_results["conflict_0"] = self.conflict_0_
+        mcf_results["conflict_0_avg"] = self.conflict_0_avg_
+        mcf_results["conflict_1_diff"] = self.conflict_1_diff_
+        mcf_results["conflict_2_diff"] = self.conflict_2_diff_
+        mcf_results["conflict_total_diff"] = self.conflict_total_diff_
 
         if file_path is not None:
             # save results
             save_results(mcf_results, file_path)
 
         return mcf_results
-    
 
-    def plot_persistent_conflict(self, path=None, title=None, window_size=1):
+    def plot_k_conflict_difference(self, path=None, title=None, window_size=1):
         """Plot persistent conflict."""
 
         colormap = plt.cm.Set1.colors
@@ -346,19 +349,43 @@ class MCF:
         fig.subplots_adjust(hspace=0.0, wspace=0.3)
         ax1 = axs[0]
         ax2 = axs[1]
-        ax1.plot(self.filtration_indices,self.betti_1_rank_, label = r'$\beta_1^t$', color=colormap[1])
-        ax1.plot(self.filtration_indices,self.betti_2_rank_, label = r'$\beta_2^t$',color=colormap[2])
-        ax1.set(xticks=[],xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
+        ax1.plot(
+            self.filtration_indices,
+            self.betti_1_rank_,
+            label=r"$\beta_1^t$",
+            color=colormap[1],
+        )
+        ax1.plot(
+            self.filtration_indices,
+            self.betti_2_rank_,
+            label=r"$\beta_2^t$",
+            color=colormap[2],
+        )
+        ax1.set(
+            xticks=[], xlim=(self.filtration_indices[0], self.filtration_indices[-1])
+        )
         ax1.legend(loc=0)
 
         if window_size > 1:
-            ax2.plot(self.filtration_indices,self.c_,c=colormap[4],ls=":")
-            ax2.plot(self.filtration_indices,_moving_average(self.c_,window_size),c=colormap[4])
+            ax2.plot(
+                self.filtration_indices,
+                self.conflict_total_diff_,
+                c=colormap[4],
+                ls=":",
+            )
+            ax2.plot(
+                self.filtration_indices,
+                _moving_average(self.conflict_total_diff_, window_size),
+                c=colormap[4],
+            )
         elif window_size == 1:
-            ax2.plot(self.filtration_indices,self.c_,c=colormap[4])
-        ax2.set_ylabel(r'$c(t)$')
-        ax2.set(xlabel=r'$t$',xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
-        
+            ax2.plot(self.filtration_indices, self.conflict_total_diff_, c=colormap[4])
+        ax2.set_ylabel(r"$\delta(t)$")
+        ax2.set(
+            xlabel=r"$t$",
+            xlim=(self.filtration_indices[0], self.filtration_indices[-1]),
+        )
+
         if not title is None:
             ax1.set(title=title)
 
@@ -367,8 +394,7 @@ class MCF:
 
         return axs
 
-
-    def plot_persistent_hierarchy(self, path=None, title=None):
+    def plot_0_conflict(self, path=None, title=None):
         """Plot persistent hierarchy."""
 
         colormap = plt.cm.Set1.colors
@@ -377,14 +403,32 @@ class MCF:
         fig.subplots_adjust(hspace=0.0, wspace=0.3)
         ax1 = axs[0]
         ax2 = axs[1]
-        ax1.plot(self.filtration_indices,self.s_partitions_, label = r'$\#\theta(t)$', color=colormap[6])
+        ax1.plot(
+            self.filtration_indices,
+            self.s_partitions_,
+            label=r"$\#\theta(t)$",
+            color=colormap[6],
+        )
 
-        ax1.plot(self.filtration_indices,self.betti_0_rank_, label = r'$\beta_0^t$', color=colormap[0])
-        ax1.set(xticks=[],xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
+        ax1.plot(
+            self.filtration_indices,
+            self.betti_0_rank_,
+            label=r"$\beta_0^t$",
+            color=colormap[0],
+        )
+        ax1.set(
+            xticks=[], xlim=(self.filtration_indices[0], self.filtration_indices[-1])
+        )
         ax1.legend(loc=0)
-        ax2.plot(self.filtration_indices,self.h_, label = r'$h(t)$',c=colormap[3])
-        ax2.set_ylabel(r'$h(t)$')
-        ax2.set(xlabel=r'$t$',ylim=(-0.1,1.1),xlim=(self.filtration_indices[0],self.filtration_indices[-1]))
+        ax2.plot(
+            self.filtration_indices, self.conflict_0_, label=r"$c_0(t)$", c=colormap[3]
+        )
+        ax2.set_ylabel(r"$c_0(t)$")
+        ax2.set(
+            xlabel=r"$t$",
+            ylim=(-0.1, 1.1),
+            xlim=(self.filtration_indices[0], self.filtration_indices[-1]),
+        )
 
         if not title is None:
             ax1.set(title=title)
@@ -393,4 +437,3 @@ class MCF:
             plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
 
         return axs
-

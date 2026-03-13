@@ -1,3 +1,4 @@
+.DS_Store
 .vscode
 
 # Figures and data
@@ -8,6 +9,7 @@
 figures/
 *.html
 data/
+results/
 
 # Unspecified results
 **/results.pkl

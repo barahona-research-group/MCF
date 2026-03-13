@@ -3,7 +3,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from mcf import MCF
+from mcf import MultiscaleClusteringFiltration as MCF
 
 # data for toy example
 partitions = [[0, 1, 2], [0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]]
@@ -18,7 +18,8 @@ def test_compute_partition_size():
     n_mcf.load_data(partitions, filtration_indices)
 
     # compute size of partitions
-    s_partitions = n_mcf.compute_partition_size()
+    n_mcf.compute_partition_size()
+    s_partitions = n_mcf.s_partitions_
 
     # check if sizes match
     npt.assert_allclose(s_partitions, np.array([3, 2, 2, 2, 1]))
@@ -73,7 +74,7 @@ def test_compute_bettis():
     npt.assert_allclose(betti_2, np.array([0, 0, 0, 0, 0]))
 
 
-def test_compute_persistent_hierarchy():
+def test_compute_0_conflict_measures():
     """Test for computing nerve-based MCF persistent hierarchy."""
 
     # initialise nerve-based MCF
@@ -87,14 +88,16 @@ def test_compute_persistent_hierarchy():
     n_mcf.compute_persistence()
 
     # compute persistent hierarchy
-    h, h_bar = n_mcf.compute_persistent_hierarchy()
+    n_mcf.compute_0_conflict()
+    h = n_mcf.conflict_0_
+    h_bar = n_mcf.conflict_0_avg_
 
     # check if persistent hierachy matches
-    assert h_bar == 0.75
-    npt.assert_allclose(h, np.array([1.0, 1.0, 0.5, 0.5, 1.0]))
+    assert h_bar == 0.25
+    npt.assert_allclose(h, np.array([0.0, 0.0, 0.5, 0.5, 0.0]))
 
 
-def test_compute_persistent_conflict():
+def test_compute_k_conflict_measures():
     """Test for computing nerve-based MCF persistent conflict."""
 
     # initialise nerve-based MCF
@@ -108,7 +111,10 @@ def test_compute_persistent_conflict():
     n_mcf.compute_persistence()
 
     # compute persistent conflict
-    c_1, c_2, c = n_mcf.compute_persistent_conflict()
+    n_mcf.compute_k_conflict_difference()
+    c_1 = n_mcf.conflict_1_diff_
+    c_2 = n_mcf.conflict_2_diff_
+    c = n_mcf.conflict_total_diff_
 
     # check if persistent conflict matches
     npt.assert_allclose(c_1, np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
@@ -139,8 +145,8 @@ def test_compute_all_measures():
     npt.assert_allclose(n_mcf_results["betti_1"], np.array([0, 0, 0, 1, 0]))
     npt.assert_allclose(n_mcf_results["betti_2"], np.array([0, 0, 0, 0, 0]))
     npt.assert_allclose(n_mcf_results["s_partitions"], np.array([3, 2, 2, 2, 1]))
-    npt.assert_allclose(n_mcf_results["h"], np.array([1.0, 1.0, 0.5, 0.5, 1.0]))
-    assert n_mcf_results["h_bar"] == 0.75
-    npt.assert_allclose(n_mcf_results["c_1"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
-    npt.assert_allclose(n_mcf_results["c_2"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
-    npt.assert_allclose(n_mcf_results["c"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+    npt.assert_allclose(n_mcf_results["conflict_0"], np.array([0.0, 0.0, 0.5, 0.5, 0.0]))
+    assert n_mcf_results["conflict_0_avg"] == 0.25
+    npt.assert_allclose(n_mcf_results["conflict_1_diff"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))
+    npt.assert_allclose(n_mcf_results["conflict_2_diff"], np.array([0.0, 0.0, 0.0, 0.0, 0.0]))
+    npt.assert_allclose(n_mcf_results["conflict_total_diff"], np.array([0.0, 0.0, 0.0, 1.0, -1.0]))

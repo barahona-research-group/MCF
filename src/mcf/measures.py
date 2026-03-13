@@ -38,13 +38,6 @@ def _compute_birth_count(mcf, dim):
     return birth_count
 
 
-def compute_partition_size(mcf):
-    """Compute partition sizes at all scales."""
-    return np.asarray(
-        [len(np.unique(mcf.partitions[i])) for i in range(mcf.n_partitions)]
-    )
-
-
 def compute_bettis(mcf):
     """Compute Betti curves."""
     betti_numbers = np.zeros((mcf.n_partitions, 3))
@@ -61,25 +54,7 @@ def compute_bettis(mcf):
 
     return betti_0, betti_1, betti_2
 
-
-def compute_persistent_hierarchy(mcf):
-    """Compute persistent hierarchy of MCF."""
-
-    # compute 0-dim. Betti number and partition sizes
-    betti_0, _, _ = compute_bettis(mcf)
-    s = compute_partition_size(mcf)
-
-    # compute persistent hierarchy
-    h = betti_0 / s
-
-    # compute average persistent hierarchy
-    # TODO: take into account non-equidistant filtration indices
-    h_bar = np.mean(h[:-1])
-
-    return h, h_bar
-
-
-def compute_persistent_conflict(mcf):
+def compute_k_conflict_difference(mcf):
     """Compute persistent conflict of MCF."""
 
     # count births

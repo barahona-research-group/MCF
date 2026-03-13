@@ -1,9 +1,9 @@
 """Setup."""
 
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 from setuptools import setup
 
-__version__ = "0.0.8"
+__version__ = "0.0.9"
 
 
 setup(
@@ -14,13 +14,11 @@ setup(
         "matplotlib",
         "numpy",
         "gudhi",    
-        "tqdm"
+        "tqdm",
+        "pandas",
     ],
     zip_safe=False,
-    extras_require={
-        "rivet": ['pyrivet @ git+https://github.com/juni-schindler/rivet-python.git'],
-        "sankey": ['omics_sankey @ git+https://github.com/juni-schindler/OmicsSankey.git']
-    },
-    packages=find_packages(),
+    packages=find_namespace_packages("src"),
     include_package_data=True,
+    package_dir={"": "src"},
 )

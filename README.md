@@ -19,21 +19,15 @@ Then, to install the package with ``pip``, execute the following command:
 pip install .
 ```
 
-To install the package with support for *Multiscale Clustering bi-Filfration* (MCbiF), execute instead:
-
-```zsh
-pip install ."[rivet]" 
-```
-
 ## Using the code
 
 Given a (not necessarily hierarchical) sequence of partitions `theta` (a list of cluster indices lists) and a list of scales `t` we can construct the MCF filtration using the `MCF` class.
 
 ```Python
-from mcf import MCF
+from mcf import MultiscaleClusteringFiltration
 
 # initialise MCF object
-mcf = MCF(max_dim=3, method="standard)
+mcf = MultiscaleClusteringFiltration(max_dim=3, method="standard)
 
 # load sequence of partitions
 mcf.load_data(theta, t)
@@ -52,28 +46,22 @@ mcf.compute_persistence()
 ax = mcf.plot_persistence_diagram()
 ```
 
-From the persistent homology we can then compute the measure of *persistent hierarchy* to quantify the level of hierarchy in the sequence of partitions and the measure of *total persistent conflict* to quantify the presence of multiscale structure. 
+From the persistent homology we can then compute the *0-conflict* measures to quantify the level of hierarchy in the sequence of partitions and the *k-conflict difference* measures to quantify the presence of multiscale structure. 
 
 ```Python
-# compute persistent hierarchy
-h, h_bar = mcf.compute_persistent_hierarchy()
-print("Average persistent hierarchy:",round(h_bar,4))
+# compute 0-conflict measures
+mcf.compute_0_conflict()
+print("Average 0-conflict:",round(mcf.conflict_0_avg,4))
 
-# compute persistent conflict
-c_1, c_2, c = mcf.compute_persistent_conflict()
+# compute k-conflict measures
+mcf.compute_k_conflict_difference()
 ```
 
-Our heuristic for scale selection is that robust partitions resolve many conflicts and are thus located at plateaus after dips in the total persistent conflict.
+Our heuristic for scale selection is that robust partitions resolve many conflicts and are thus located at plateaus after dips in the total persistent conflict difference.
 
 To compute all MCF measures and store them in a dictionary one can simply use the `compute_all_measures()` method.
 
 ```Python
-# initialise MCF object
-mcf = MCF()
-
-# load sequence of partitions
-mcf.load_data(theta,t)
-
 # compute all MCF measures
 mcf.compute_all_measures(file_path="mcf_results.pkl",)
 ```
