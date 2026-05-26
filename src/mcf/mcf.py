@@ -5,6 +5,7 @@ import gudhi as gd
 import matplotlib.pyplot as plt
 import numpy as np
 
+from gudhi.representations import Landscape
 from tqdm import tqdm
 
 from mcf.io import load_results, save_results
@@ -57,6 +58,13 @@ class MultiscaleClusteringFiltration:
         self.betti_0_rank_ = None
         self.betti_1_rank_ = None
         self.betti_2_rank_ = None
+
+        # initialise persistent landscapes
+        self.l_k_max = 5
+        self.l_resolution = 500
+        self.l_0_ = None
+        self.l_1_ = None
+        self.l_2_ = None
 
         # initialise partition size
         self.s_partitions_ = None
@@ -286,9 +294,47 @@ class MultiscaleClusteringFiltration:
         self.conflict_2_diff_ = c_2
         self.conflict_total_diff_ = c
 
+    def compute_landscapes(self, l_dims=[0, 1, 2], l_k_max=5, l_resolution=500):
+        """Compute persistent landscapes."""
+
+        if l_dims is None:
+            return
+
+        # we compute persistent landscapes for given k_max and resolution
+        self.l_k_max = l_k_max
+        self.l_resolution = l_resolution
+
+        landscape = Landscape(
+            sample_range=[self.filtration_indices[0], self.filtration_indices[-1]],
+            resolution=self.l_resolution,
+            num_landscapes=self.l_k_max,
+        )
+
+        # compute landscapes for different dimensions
+        if 0 in l_dims:
+            dgm_0_finite = self.persistence[0][
+                np.where(~np.isin(self.persistence[0][:, 1], np.inf))[0]
+            ]
+            self.l_0_ = landscape.fit_transform([dgm_0_finite])[0]
+
+        if 1 in l_dims:
+            dgm_1_finite = self.persistence[1][
+                np.where(~np.isin(self.persistence[1][:, 1], np.inf))[0]
+            ]
+            self.l_1_ = landscape.fit_transform([dgm_1_finite])[0]
+
+        if 2 in l_dims:
+            dgm_2_finite = self.persistence[2][
+                np.where(~np.isin(self.persistence[2][:, 1], np.inf))[0]
+            ]
+            self.l_2_ = landscape.fit_transform([dgm_2_finite])[0]
+
     def compute_all_measures(
         self,
         file_path="mcf_results.pkl",
+        l_dims=[0, 1, 2],
+        l_k_max=5,
+        l_resolution=500,
         tqdm_disable=False,
     ):
         """Construct MCF, compute PH and compute all derived measures."""
@@ -307,6 +353,9 @@ class MultiscaleClusteringFiltration:
 
         # compute Betti numbers
         self.compute_bettis()
+
+        # compute persistent landscapes
+        self.compute_landscapes(l_dims, l_k_max, l_resolution)
 
         # compute size of partitions
         self.compute_partition_size()
@@ -327,6 +376,9 @@ class MultiscaleClusteringFiltration:
         mcf_results["betti_0"] = self.betti_0_rank_
         mcf_results["betti_1"] = self.betti_1_rank_
         mcf_results["betti_2"] = self.betti_2_rank_
+        mcf_results["l_0"] = self.l_0_
+        mcf_results["l_1"] = self.l_1_
+        mcf_results["l_2"] = self.l_2_
         mcf_results["s_partitions"] = self.s_partitions_
         mcf_results["conflict_0"] = self.conflict_0_
         mcf_results["conflict_0_avg"] = self.conflict_0_avg_
@@ -437,3 +489,35 @@ class MultiscaleClusteringFiltration:
             plt.savefig(path, dpi=fig.dpi, bbox_inches="tight")
 
         return axs
+
+    def plot_landscapes(self):
+        """Plot persistent landscapes."""
+
+        landscapes = [self.l_0_, self.l_1_, self.l_2_]
+        x_ticks = np.around(
+            np.linspace(
+                self.filtration_indices[0],
+                self.filtration_indices[-1],
+                self.l_resolution,
+            ),
+            decimals=2,
+        )
+
+        for i, l in enumerate(landscapes):
+            if l is not None:
+                _, ax = plt.subplots(1, figsize=(8, 3))
+                for k in range(self.l_k_max):
+                    ax.plot(
+                        x_ticks,
+                        l[k * self.l_resolution : (k + 1) * self.l_resolution],
+                        label=f"$k={k+1}$",
+                    )
+                ax.set(
+                    xlabel="$t$",
+                    ylabel=r"$\lambda_k(t)$",
+                    xlim=(self.filtration_indices[0], self.filtration_indices[-1]),
+                    title=f"{i}-dimensional persistence landscapes",
+                )
+                ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+                ax.grid()
+                plt.show()
