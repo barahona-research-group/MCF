@@ -13,7 +13,12 @@ from mcf.measures import (
     compute_bettis,
     compute_k_conflict_difference,
 )
-from mcf.utils import node_id_to_dict, _cluster_id_preprocessing, _moving_average
+from mcf.utils import (
+    _cluster_id_preprocessing,
+    _moving_average,
+    _partition_to_clusters,
+    compute_true_overlaps,
+)
 from mcf.plotting import plot_sankey, plot_pd
 
 
@@ -21,7 +26,7 @@ class MultiscaleClusteringFiltration:
     """Main class to construct MCF from a sequence of partitions and analyse
     its persistent homology."""
 
-    def __init__(self, method="standard", max_dim=3):
+    def __init__(self, method="standard", max_dim=3, restrict_to_true_overlaps=False):
         """Initialise MCF object.
 
         Parameters:
@@ -36,6 +41,12 @@ class MultiscaleClusteringFiltration:
                 - 'nerve': Nerve-based method where nodes in MCF correspond to
                     clusters. Faster when the total number of distinct clusters
                     is smaller than the number of points.
+
+            restrict_to_true_overlaps (bool): If True, restrict the sequence
+                of partitions to the set of true overlaps before building the
+                filtration. This preserves the persistent homology in
+                dimensions >= 1, see our paper, but changes the 0-dimensional
+                persistence.
         """
 
         # initialise sequence of partitions
@@ -47,6 +58,9 @@ class MultiscaleClusteringFiltration:
 
         # set method to construct filtration, either standard or nerve-based
         self.method = method
+
+        # set optional restriction to true overlaps
+        self.restrict_to_true_overlaps = restrict_to_true_overlaps
 
         # initialise for gudhi
         self.filtration_gudhi = gd.SimplexTree()
@@ -93,6 +107,14 @@ class MultiscaleClusteringFiltration:
         filtration indices."""
         self.partitions = partitions
 
+        # optionally restrict partitions to true overlaps, which preserves
+        # the persistent homology in dimensions >= 1
+        if self.restrict_to_true_overlaps:
+            x_bar = compute_true_overlaps(partitions)
+            self.partitions = [
+                np.asarray(partition)[x_bar] for partition in partitions
+            ]
+
         if filtration_indices is None:
             # if no filtration indices are given use enumeration
             self.filtration_indices = np.arange(1, self.n_partitions + 1)
@@ -110,6 +132,7 @@ class MultiscaleClusteringFiltration:
             "filtration_indices": "filtration_indices",
             "max_dim": "max_dim",
             "method": "method",
+            "restrict_to_true_overlaps": "restrict_to_true_overlaps",
             "persistence": "persistence",
             "betti_0": "betti_0_rank_",
             "betti_1": "betti_1_rank_",
@@ -133,40 +156,41 @@ class MultiscaleClusteringFiltration:
         # initialise simplex tree
         self.filtration_gudhi = gd.SimplexTree()
 
-        # store all communities to later avoid repetitious computations
+        # store all partitions and communities to avoid repetitious computations
+        seen_partitions = set()
         all_communities = set()
 
         for t in tqdm(range(len(self.filtration_indices)), disable=tqdm_disable):
 
             # continue if partition at scale t has appeared before
-            is_repetition = False
-            for s in range(t - 1, -1, -1):
-                if np.array_equal(self.partitions[s], self.partitions[t]):
-                    is_repetition = True
-                    break
-            if is_repetition:
+            partition = np.asarray(self.partitions[t], dtype=np.int64)
+            if partition.tobytes() in seen_partitions:
                 continue
+            seen_partitions.add(partition.tobytes())
 
             # add communities at scale t as simplices to tree
-            for community in node_id_to_dict(self.partitions[t]).values():
+            for members in _partition_to_clusters(partition):
+                community = frozenset(members.tolist())
                 # continue if community has been added before
                 if community in all_communities:
                     continue
                 # add community to set of all communities
-                else:
-                    all_communities.add(community)
-                # compute size of community
-                s_community = len(community)
-                # cover community by max_dim-simplices when community is larger than max_dim
-                for face in itertools.combinations(
-                    community, min(self.max_dim + 1, s_community)
-                ):
-                    self.filtration_gudhi.insert(
-                        list(face), filtration=self.filtration_indices[t]
-                    )
+                all_communities.add(community)
+                # cover community by max_dim-simplices when community is larger
+                # than max_dim and insert them in one batch
+                k = min(self.max_dim + 1, len(members))
+                faces = np.array(
+                    list(itertools.combinations(members, k)), dtype=np.int64
+                )
+                self.filtration_gudhi.insert_batch(
+                    np.ascontiguousarray(faces.T),
+                    np.full(len(faces), self.filtration_indices[t], dtype=np.float64),
+                )
 
     def _build_filtration_nerve(self, tqdm_disable=False):
-        """Construct MCF via nerve-based method."""
+        """Construct MCF via nerve-based method. Repeated clusters are only
+        added at their first occurrence, which preserves the persistent
+        homology."""
 
         # initialise simplex tree
         self.filtration_gudhi = gd.SimplexTree()
@@ -175,7 +199,8 @@ class MultiscaleClusteringFiltration:
         # and a dictionary that maps cluster indices to sets
         partitions_c_ind, ind_to_c = _cluster_id_preprocessing(self.partitions)
 
-        # initialise simplices of different dimensions
+        # initialise simplices of different dimensions, stored together with
+        # the intersection of their clusters to avoid recomputing intersections
         nodes = list()
         edges = list()
         triangles = list()
@@ -186,58 +211,46 @@ class MultiscaleClusteringFiltration:
             total=len(self.filtration_indices),
             disable=tqdm_disable,
         ):
-            # get new cluster indices
-            c_ind_new = partitions_c_ind[i]
-            # iterate through indices
-            for c_ind in c_ind_new:
+            # iterate through new cluster indices
+            for c_ind in partitions_c_ind[i]:
                 c = ind_to_c[c_ind]
 
-                # add tetrahedra
+                # add tetrahedra (not stored because homology is only
+                # computed up to dimension max_dim - 1)
                 if self.max_dim > 2:
-                    for triangle_ind in triangles:
-                        # get intersection of clusters corresponding to triangle
-                        triangle_intersection = (
-                            ind_to_c[triangle_ind[0]]
-                            .intersection(ind_to_c[triangle_ind[1]])
-                            .intersection(ind_to_c[triangle_ind[2]])
-                        )
+                    for triangle, triangle_intersection in triangles:
                         # check if new cluster intersects with triangle
                         if not c.isdisjoint(triangle_intersection):
-                            tetrahedron = triangle_ind + [c_ind]
+                            tetrahedron = triangle + [c_ind]
                             # insert tetrahedron into simplex tree
                             self.filtration_gudhi.insert(tetrahedron, filtration=t)
 
                 # add triangles
                 if self.max_dim > 1:
-                    for edge_ind in edges:
-                        # get intersection of clusters corresponding to edge
-                        edge_intersection = ind_to_c[edge_ind[0]].intersection(
-                            ind_to_c[edge_ind[1]]
-                        )
-                        # check if new cluster intersects with edge
-                        if not c.isdisjoint(edge_intersection):
-                            triangle = edge_ind + [c_ind]
+                    for edge, edge_intersection in edges:
+                        # intersect new cluster with edge
+                        common = edge_intersection & c
+                        if common:
+                            triangle = edge + [c_ind]
                             # insert triangle into simplex tree
                             self.filtration_gudhi.insert(triangle, filtration=t)
-                            # add triangle to set
-                            triangles.append(triangle)
+                            # store triangle with its intersection
+                            triangles.append((triangle, common))
 
                 # add edges
-                for node_ind in nodes:
-                    # get cluster corresponding to node
-                    node_intersection = ind_to_c[node_ind[0]]
-                    # check if new cluster intersects with node
-                    if not c.isdisjoint(node_intersection):
-                        edge = node_ind + [c_ind]
+                for node_ind, node_cluster in nodes:
+                    # intersect new cluster with node
+                    common = node_cluster & c
+                    if common:
+                        edge = [node_ind, c_ind]
                         # insert edge into simplex tree
                         self.filtration_gudhi.insert(edge, filtration=t)
-                        # add edge to set
-                        edges.append(edge)
+                        # store edge with its intersection
+                        edges.append((edge, common))
 
                 # add nodes
-                node = [c_ind]
-                self.filtration_gudhi.insert(node, filtration=t)
-                nodes.append(node)
+                self.filtration_gudhi.insert([c_ind], filtration=t)
+                nodes.append((c_ind, c))
 
     def build_filtration(self, tqdm_disable=False):
         """Build MCF filtration."""
@@ -385,6 +398,7 @@ class MultiscaleClusteringFiltration:
         mcf_results["filtration_indices"] = self.filtration_indices
         mcf_results["max_dim"] = self.max_dim
         mcf_results["method"] = self.method
+        mcf_results["restrict_to_true_overlaps"] = self.restrict_to_true_overlaps
         mcf_results["persistence"] = self.persistence
         mcf_results["betti_0"] = self.betti_0_rank_
         mcf_results["betti_1"] = self.betti_1_rank_
