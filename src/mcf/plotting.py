@@ -107,7 +107,7 @@ def plot_sankey(
     return fig
 
 
-def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$"):
+def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
     """
     Code is a modified version of the GUDHI's plot_persistence_diagram.
 
@@ -115,6 +115,7 @@ def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$"):
         mcf: MCF object
         alpha (float): transparency of points in PD
         marker_size: size of points in PD
+        flipped (bool): if True, plot death on x-axis and birth on y-axis
     """
 
     # obtain min and max values and define value for infinity
@@ -127,26 +128,39 @@ def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$"):
     plt.rcParams.update({"font.size": 20})
 
     # create axis
-    fig, ax = plt.subplots(1, figsize=(8, 7))
+    fig, ax = plt.subplots(1, figsize=(8.4, 7) if flipped else (8, 7))
 
     # define colormap
     colormap = plt.cm.Set1.colors
 
     # infinity line
-    ax.plot(
-        [tmin - 0.5 * delta, tmax],
-        [infinity, infinity],
-        linewidth=1.0,
-        color="k",
-        alpha=0.5,
-    )
+    if flipped:
+        ax.plot(
+            [infinity, infinity],
+            [tmin - 0.5 * delta, tmax],
+            linewidth=1.0,
+            color="k",
+            alpha=0.5,
+        )
+    else:
+        ax.plot(
+            [tmin - 0.5 * delta, tmax],
+            [infinity, infinity],
+            linewidth=1.0,
+            color="k",
+            alpha=0.5,
+        )
 
     # plot persistences
     for dim, PD in enumerate(mcf.persistence):
         if len(PD) > 0:
+            x = PD[:, 0]
+            y = np.nan_to_num(PD[:, 1], posinf=infinity)
+            if flipped:
+                x, y = y, x
             ax.scatter(
-                PD[:, 0],
-                np.nan_to_num(PD[:, 1], posinf=infinity),
+                x,
+                y,
                 color=colormap[dim],
                 alpha=alpha,
                 label=r"$H_{}$".format(dim),
@@ -154,46 +168,86 @@ def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$"):
             )
 
     # plot top line
-    ax.plot([tmin - 0.5 * delta, tmax], [tmax, tmax], linewidth=1.0, color="k")
+    if flipped:
+        ax.plot([tmax, tmax], [tmin - 0.5 * delta, tmax], linewidth=1.0, color="k")
+    else:
+        ax.plot([tmin - 0.5 * delta, tmax], [tmax, tmax], linewidth=1.0, color="k")
 
     # plot diag
     ax.plot([tmin, tmax], [tmin, tmax], linewidth=1.0, color="k")
 
     # plot lower diag patch
-    ax.add_patch(
-        mpatches.Polygon(
-            [[tmin, tmin], [tmax, tmin], [tmax, tmax]], fill=True, color="lightgrey"
+    if flipped:
+        ax.add_patch(
+            mpatches.Polygon(
+                [[tmin, tmin], [tmin, tmax], [tmax, tmax]], fill=True, color="lightgrey"
+            )
         )
-    )
+    else:
+        ax.add_patch(
+            mpatches.Polygon(
+                [[tmin, tmin], [tmax, tmin], [tmax, tmax]], fill=True, color="lightgrey"
+            )
+        )
 
     # labels and axes limits
-    ax.set(
-        xlabel=f"{scale_label} [Birth]",
-        ylabel=f"{scale_label} [Death]",
-        xlim=(tmin - 0.5 * delta, tmax),
-        ylim=(tmin, infinity + 0.5 * delta),
-    )
+    if flipped:
+        ax.set(
+            xlabel=f"{scale_label} [Death]",
+            ylabel=f"{scale_label} [Birth]",
+            xlim=(tmin, infinity + 0.5 * delta),
+            ylim=(tmin - 0.5 * delta, tmax),
+        )
+    else:
+        ax.set(
+            xlabel=f"{scale_label} [Birth]",
+            ylabel=f"{scale_label} [Death]",
+            xlim=(tmin - 0.5 * delta, tmax),
+            ylim=(tmin, infinity + 0.5 * delta),
+        )
 
-    # Infinity and y-axis label
-    yt = ax.get_yticks()
-    yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
-    yt = np.append(yt, infinity)
-    ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
-    ytl[-1] = r"$+\infty$"
-    ax.set_yticks(yt)
-    ax.set_yticklabels(ytl)
+    if flipped:
+        # Infinity and x-axis label
+        xt = ax.get_xticks()
+        xt = xt[np.where(xt <= tmax)]  # to avoid ploting ticklabel higher than infinity
+        xt = np.append(xt, infinity)
+        xtl = ["%.2f" % e for e in xt]  # to avoid float precision error
+        xtl[-1] = r"$+\infty$"
+        ax.set_xticks(xt)
+        ax.set_xticklabels(xtl)
 
-    # x-axis label
-    ax.set_xticks(yt[:-1])
-    ax.set_xticklabels(ytl[:-1])
+        # y-axis label
+        ax.set_yticks(xt[:-1])
+        ax.set_yticklabels(xtl[:-1])
+    else:
+        # Infinity and y-axis label
+        yt = ax.get_yticks()
+        yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
+        yt = np.append(yt, infinity)
+        ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
+        ytl[-1] = r"$+\infty$"
+        ax.set_yticks(yt)
+        ax.set_yticklabels(ytl)
 
-    ax.legend(loc=4)
+        # x-axis label
+        ax.set_xticks(yt[:-1])
+        ax.set_xticklabels(ytl[:-1])
 
-    return ax
+    ax.legend(loc=2 if flipped else 4)
+
+    return fig, ax
 
 
-def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1):
-    """Code to plot ensemble PD. Modified from GUDHI."""
+def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=False):
+    """Code to plot ensemble PD. Modified from GUDHI.
+
+    Args:
+        all_persistences: list of persistences for each realisation
+        log_times: filtration scales
+        max_dim (int): maximum dimension to plot
+        alpha (float): transparency of points in PD
+        flipped (bool): if True, plot death on x-axis and birth on y-axis
+    """
 
     # get number of PDs and max dimension
     n_realisations = len(all_persistences)
@@ -210,75 +264,119 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1):
     plt.rcParams.update({"font.size": 20})
 
     # create axis
-    fig, ax = plt.subplots(1, figsize=(8, 7))
+    fig, ax = plt.subplots(1, figsize=(8.4, 7) if flipped else (8, 7))
 
     # define colormap
     colormap = plt.cm.Set1.colors
 
     # infinity line
-    ax.plot(
-        [tmin - 0.5 * delta, tmax],
-        [infinity, infinity],
-        linewidth=1.0,
-        color="k",
-        alpha=0.5,
-    )
+    if flipped:
+        ax.plot(
+            [infinity, infinity],
+            [tmin - 0.5 * delta, tmax],
+            linewidth=1.0,
+            color="k",
+            alpha=0.5,
+        )
+    else:
+        ax.plot(
+            [tmin - 0.5 * delta, tmax],
+            [infinity, infinity],
+            linewidth=1.0,
+            color="k",
+            alpha=0.5,
+        )
 
     # plot persistences
     for i in range(n_realisations):
         for dim in range(max_dim + 1):
             persistences = all_persistences[i][dim]
-            if i == 0:
-                if len(persistences) > 0:
+            if len(persistences) > 0:
+                x = persistences[:, 0]
+                y = np.nan_to_num(persistences[:, 1], posinf=infinity)
+                if flipped:
+                    x, y = y, x
+                if i == 0:
                     ax.scatter(
-                        persistences[:, 0],
-                        np.nan_to_num(persistences[:, 1], posinf=infinity),
+                        x,
+                        y,
                         color=colormap[dim],
                         alpha=alpha,
                         label=f"$H_{dim}$",
                     )
-            else:
-                if len(persistences) > 0:
+                else:
                     ax.scatter(
-                        persistences[:, 0],
-                        np.nan_to_num(persistences[:, 1], posinf=infinity),
+                        x,
+                        y,
                         color=colormap[dim],
                         alpha=alpha,
                     )
 
     # plot top line
-    ax.plot([tmin - 0.5 * delta, tmax], [tmax, tmax], linewidth=1.0, color="k")
+    if flipped:
+        ax.plot([tmax, tmax], [tmin - 0.5 * delta, tmax], linewidth=1.0, color="k")
+    else:
+        ax.plot([tmin - 0.5 * delta, tmax], [tmax, tmax], linewidth=1.0, color="k")
 
     # plot diag
     ax.plot([tmin, tmax], [tmin, tmax], linewidth=1.0, color="k")
 
     # plot lower diag patch
-    ax.add_patch(
-        mpatches.Polygon(
-            [[tmin, tmin], [tmax, tmin], [tmax, tmax]], fill=True, color="lightgrey"
+    if flipped:
+        ax.add_patch(
+            mpatches.Polygon(
+                [[tmin, tmin], [tmin, tmax], [tmax, tmax]], fill=True, color="lightgrey"
+            )
         )
-    )
+    else:
+        ax.add_patch(
+            mpatches.Polygon(
+                [[tmin, tmin], [tmax, tmin], [tmax, tmax]], fill=True, color="lightgrey"
+            )
+        )
 
     # labels and axes limits
-    ax.set(
-        xlabel="Birth",
-        ylabel="Death",
-        xlim=(tmin - 0.5 * delta, tmax),
-        ylim=(tmin, infinity + 0.5 * delta),
-    )
+    if flipped:
+        ax.set(
+            xlabel="Death",
+            ylabel="Birth",
+            xlim=(tmin, infinity + 0.5 * delta),
+            ylim=(tmin - 0.5 * delta, tmax),
+        )
+    else:
+        ax.set(
+            xlabel="Birth",
+            ylabel="Death",
+            xlim=(tmin - 0.5 * delta, tmax),
+            ylim=(tmin, infinity + 0.5 * delta),
+        )
 
-    # Infinity and y-axis label
-    yt = ax.get_yticks()
-    yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
-    yt = np.append(yt, infinity)
-    ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
-    ytl[-1] = r"$+\infty$"
-    ax.set_yticks(yt)
-    ax.set_yticklabels(ytl)
+    if flipped:
+        # Infinity and x-axis label
+        xt = ax.get_xticks()
+        xt = xt[np.where(xt <= tmax)]  # to avoid ploting ticklabel higher than infinity
+        xt = np.append(xt, infinity)
+        xtl = ["%.2f" % e for e in xt]  # to avoid float precision error
+        xtl[-1] = r"$+\infty$"
+        ax.set_xticks(xt)
+        ax.set_xticklabels(xtl)
 
-    # x-axis label
-    ax.set_xticks(yt[:-1])
-    ax.set_xticklabels(ytl[:-1])
+        # y-axis label
+        ax.set_yticks(xt[:-1])
+        ax.set_yticklabels(xtl[:-1])
+    else:
+        # Infinity and y-axis label
+        yt = ax.get_yticks()
+        yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
+        yt = np.append(yt, infinity)
+        ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
+        ytl[-1] = r"$+\infty$"
+        ax.set_yticks(yt)
+        ax.set_yticklabels(ytl)
+
+        # x-axis label
+        ax.set_xticks(yt[:-1])
+        ax.set_xticklabels(ytl[:-1])
 
     # create legend for node types
     legend = []
@@ -294,6 +392,6 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1):
                 markersize=10,
             )
         )
-    plt.legend(handles=legend, loc=4, facecolor="white", framealpha=1)
+    plt.legend(handles=legend, loc=2 if flipped else 4, facecolor="white", framealpha=1)
 
     return fig, ax

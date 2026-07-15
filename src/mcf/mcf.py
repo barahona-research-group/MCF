@@ -69,9 +69,11 @@ class MultiscaleClusteringFiltration:
         # initialise partition size
         self.s_partitions_ = None
 
-        # initialse persistent hierarchy and conflict
+        # initialse conflict measures
         self.conflict_0_ = None
         self.conflict_0_avg_ = None
+        self.conflict_1_avg_ = None
+        self.conflict_2_avg_ = None
         self.conflict_total_diff_ = None
         self.conflict_1_diff_ = None
         self.conflict_2_diff_ = None
@@ -104,19 +106,27 @@ class MultiscaleClusteringFiltration:
         mcf_results = load_results(file_path)
 
         # unpack dictionary
-        self.filtration_indices = mcf_results["filtration_indices"]
-        self.max_dim = mcf_results["max_dim"]
-        self.method = mcf_results["method"]
-        self.persistence = mcf_results["persistence"]
-        self.betti_0_rank_ = mcf_results["betti_0"]
-        self.betti_1_rank_ = mcf_results["betti_1"]
-        self.betti_2_rank_ = mcf_results["betti_2"]
-        self.s_partitions_ = mcf_results["s_partitions"]
-        self.conflict_0_ = mcf_results["conflict_0"]
-        self.conflict_0_avg_ = mcf_results["conflict_0_avg"]
-        self.conflict_1_diff_ = mcf_results["conflict_1_diff"]
-        self.conflict_2_diff_ = mcf_results["conflict_2_diff"]
-        self.conflict_total_diff_ = mcf_results["conflict_total_diff"]
+        mapping = {
+            "filtration_indices": "filtration_indices",
+            "max_dim": "max_dim",
+            "method": "method",
+            "persistence": "persistence",
+            "betti_0": "betti_0_rank_",
+            "betti_1": "betti_1_rank_",
+            "betti_2": "betti_2_rank_",
+            "s_partitions": "s_partitions_",
+            "conflict_0": "conflict_0_",
+            "conflict_0_avg": "conflict_0_avg_",
+            "conflict_1_avg": "conflict_1_avg_",
+            "conflict_2_avg": "conflict_2_avg_",
+            "conflict_1_diff": "conflict_1_diff_",
+            "conflict_2_diff": "conflict_2_diff_",
+            "conflict_total_diff": "conflict_total_diff_",
+        }
+        
+        for key, attr in mapping.items():
+            if key in mcf_results:
+                setattr(self, attr, mcf_results[key])
 
     def _build_filtration_standard(self, tqdm_disable=False):
         """Construct MCF via standard method."""
@@ -252,9 +262,9 @@ class MultiscaleClusteringFiltration:
             )
             self.persistence.append(persistence_diagram)
 
-    def plot_pd(self, alpha=0.5, marker_size=None, scale_label="$t$"):
+    def plot_pd(self, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
         """Plot MCF persistence diagram."""
-        return plot_pd(self, alpha, marker_size, scale_label)
+        return plot_pd(self, alpha, marker_size, scale_label, flipped)
 
     def plot_sankey(self, step=1, color=True, alpha=0.5, pad=0.1, thickness=1):
         """Plot Sankey diagram of partitions."""
@@ -274,8 +284,8 @@ class MultiscaleClusteringFiltration:
             [len(np.unique(self.partitions[i])) for i in range(self.n_partitions)]
         )
 
-    def compute_0_conflict(self):
-        """Compute persistent hierarchy."""
+    def compute_conflict_measures(self):
+        """Compute conflict measures."""
 
         if self.betti_0_rank_ is None:
             self.compute_bettis()
@@ -283,12 +293,18 @@ class MultiscaleClusteringFiltration:
         if self.s_partitions_ is None:
             self.compute_partition_size()
 
+        # compute 0-conflict
         self.conflict_0_ = 1 - self.betti_0_rank_ / self.s_partitions_
+        
+        # compute average 0-conflict
         # TODO: take into account non-equidistant filtration indices
-        self.conflict_0_avg_ = np.mean(self.conflict_0_[:-1])
+        self.conflict_0_avg_ = np.mean(self.conflict_0_)
 
-    def compute_k_conflict_difference(self):
-        """Compute persistent conflict."""
+        # compute average k-conflict
+        self.conflict_1_avg_ = np.mean(self.betti_1_rank_.mean())
+        self.conflict_2_avg_ = np.mean(self.betti_2_rank_.mean())
+
+        # compute k-conflict difference
         c_1, c_2, c = compute_k_conflict_difference(self)
         self.conflict_1_diff_ = c_1
         self.conflict_2_diff_ = c_2
@@ -332,7 +348,7 @@ class MultiscaleClusteringFiltration:
     def compute_all_measures(
         self,
         file_path="mcf_results.pkl",
-        l_dims=[0, 1, 2],
+        l_dims=[], # don't compute landscapes by default
         l_k_max=5,
         l_resolution=500,
         tqdm_disable=False,
@@ -360,11 +376,8 @@ class MultiscaleClusteringFiltration:
         # compute size of partitions
         self.compute_partition_size()
 
-        # compute 0 conflict measures
-        self.compute_0_conflict()
-
-        # compute k conflict measures
-        self.compute_k_conflict_difference()
+        # compute conflict measures
+        self.compute_conflict_measures()
 
         # compile results dictionary
         mcf_results = {}
@@ -382,6 +395,8 @@ class MultiscaleClusteringFiltration:
         mcf_results["s_partitions"] = self.s_partitions_
         mcf_results["conflict_0"] = self.conflict_0_
         mcf_results["conflict_0_avg"] = self.conflict_0_avg_
+        mcf_results["conflict_1_avg"] = self.conflict_1_avg_
+        mcf_results["conflict_2_avg"] = self.conflict_2_avg_
         mcf_results["conflict_1_diff"] = self.conflict_1_diff_
         mcf_results["conflict_2_diff"] = self.conflict_2_diff_
         mcf_results["conflict_total_diff"] = self.conflict_total_diff_
