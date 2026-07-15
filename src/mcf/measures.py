@@ -39,20 +39,42 @@ def _compute_birth_count(mcf, dim):
 
 
 def compute_bettis(mcf):
-    """Compute Betti curves."""
-    betti_numbers = np.zeros((mcf.n_partitions, 3))
-    n_dim = mcf.filtration_gudhi.dimension()
+    """Compute Betti curves from the persistence intervals."""
+    filtration_indices = np.asarray(mcf.filtration_indices, dtype=float)
+    bettis = []
 
-    for m in range((mcf.n_partitions)):
-        betti_numbers[m][0:n_dim] = mcf.filtration_gudhi.persistent_betti_numbers(
-            mcf.filtration_indices[m], mcf.filtration_indices[m]
+    for dim in range(3):
+        dgm = mcf.filtration_gudhi.persistence_intervals_in_dimension(dim)
+        if len(dgm) == 0:
+            bettis.append(np.zeros(mcf.n_partitions))
+            continue
+        # count intervals alive at scale t, i.e. birth <= t < death
+        alive = (dgm[:, 0] <= filtration_indices[:, None]) & (
+            filtration_indices[:, None] < dgm[:, 1]
         )
+        bettis.append(alive.sum(axis=1).astype(float))
 
-    betti_0 = betti_numbers[:, 0]
-    betti_1 = betti_numbers[:, 1]
-    betti_2 = betti_numbers[:, 2]
+    return bettis[0], bettis[1], bettis[2]
 
-    return betti_0, betti_1, betti_2
+
+def _average_over_scales(values, filtration_indices):
+    """Average of a piecewise-constant function of scale, weighted by the
+    lengths of the scale intervals (see average conflict measures in our
+    paper), where the interval at the last scale is the average gap. Reduces
+    to the arithmetic mean for equidistant filtration indices."""
+    values = np.asarray(values, dtype=float)
+    filtration_indices = np.asarray(filtration_indices, dtype=float)
+
+    if len(filtration_indices) == 1:
+        return values[0]
+
+    last_gap = (filtration_indices[-1] - filtration_indices[0]) / (
+        len(filtration_indices) - 1
+    )
+    gaps = np.append(np.diff(filtration_indices), last_gap)
+
+    return np.sum(values * gaps) / np.sum(gaps)
+
 
 def compute_k_conflict_difference(mcf):
     """Compute persistent conflict of MCF."""

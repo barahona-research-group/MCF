@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from mcf.io import load_results, save_results
 from mcf.measures import (
+    _average_over_scales,
     compute_bettis,
     compute_k_conflict_difference,
 )
@@ -264,8 +265,14 @@ class MultiscaleClusteringFiltration:
     def compute_persistence(self):
         """Compute persistent homology of MCF using GUDHI."""
 
+        # include the top dimension of the complex only if it was not
+        # truncated at max_dim, because then its homology is genuine
+        persistence_dim_max = self.filtration_gudhi.dimension() < self.max_dim
+
         # compute persistence with GUDHI (over 2 element field)
-        self.filtration_gudhi.persistence(homology_coeff_field=2)
+        self.filtration_gudhi.persistence(
+            homology_coeff_field=2, persistence_dim_max=persistence_dim_max
+        )
 
         # summarise persistence
         self.persistence = []
@@ -308,14 +315,19 @@ class MultiscaleClusteringFiltration:
 
         # compute 0-conflict
         self.conflict_0_ = 1 - self.betti_0_rank_ / self.s_partitions_
-        
-        # compute average 0-conflict
-        # TODO: take into account non-equidistant filtration indices
-        self.conflict_0_avg_ = np.mean(self.conflict_0_)
 
-        # compute average k-conflict
-        self.conflict_1_avg_ = np.mean(self.betti_1_rank_.mean())
-        self.conflict_2_avg_ = np.mean(self.betti_2_rank_.mean())
+        # compute average 0-conflict weighted by scale intervals
+        self.conflict_0_avg_ = _average_over_scales(
+            self.conflict_0_, self.filtration_indices
+        )
+
+        # compute average k-conflict weighted by scale intervals
+        self.conflict_1_avg_ = _average_over_scales(
+            self.betti_1_rank_, self.filtration_indices
+        )
+        self.conflict_2_avg_ = _average_over_scales(
+            self.betti_2_rank_, self.filtration_indices
+        )
 
         # compute k-conflict difference
         c_1, c_2, c = compute_k_conflict_difference(self)
