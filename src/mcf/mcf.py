@@ -1,6 +1,9 @@
 """Code for Multiscale Clustering Filtration (MCF)."""
 
 import itertools
+import math
+from collections import defaultdict
+
 import gudhi as gd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -161,6 +164,18 @@ class MultiscaleClusteringFiltration:
         seen_partitions = set()
         all_communities = set()
 
+        # inserted communities indexed by their members, for subset checks
+        communities_containing = defaultdict(list)
+
+        # maximal filtration size: the max_dim-skeleton of the full simplex
+        n_points = len(self.partitions[0]) if len(self.partitions) > 0 else 0
+        max_n_simplices = sum(
+            math.comb(n_points, d)
+            for d in range(1, min(self.max_dim + 1, n_points) + 1)
+        )
+        # overcount of the filtration size that gates the exact size check
+        potential_n_simplices = 0
+
         for t in tqdm(range(len(self.filtration_indices)), disable=tqdm_disable):
 
             # continue if partition at scale t has appeared before
@@ -177,6 +192,14 @@ class MultiscaleClusteringFiltration:
                     continue
                 # add community to set of all communities
                 all_communities.add(community)
+                # continue if all faces are covered by an earlier superset
+                if any(
+                    community <= candidate
+                    for candidate in communities_containing[int(members[0])]
+                ):
+                    continue
+                for x in members.tolist():
+                    communities_containing[x].append(community)
                 # cover community by max_dim-simplices when community is larger
                 # than max_dim and insert them in one batch
                 k = min(self.max_dim + 1, len(members))
@@ -187,6 +210,14 @@ class MultiscaleClusteringFiltration:
                     np.ascontiguousarray(faces.T),
                     np.full(len(faces), self.filtration_indices[t], dtype=np.float64),
                 )
+                potential_n_simplices += sum(
+                    math.comb(len(members), d) for d in range(1, k + 1)
+                )
+
+            # stop early when the filtration is maxed out
+            if potential_n_simplices >= max_n_simplices:
+                if self.filtration_gudhi.num_simplices() == max_n_simplices:
+                    break
 
     def _build_filtration_nerve(self, tqdm_disable=False):
         """Construct MCF via nerve-based method. Repeated clusters are only

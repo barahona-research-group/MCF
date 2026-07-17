@@ -2,6 +2,8 @@
 always lead to the same persistent homology, and restricting to true overlaps
 must preserve the persistent homology in dimensions >= 1."""
 
+import math
+
 import numpy as np
 import pytest
 
@@ -59,6 +61,15 @@ CASES = {
     # only 2-point clusters whose edges form a cycle of points, so the
     # 1-dimensional homology lives in the top dimension of the complex
     "cycle_of_pairs": ([[0, 0, 1, 1], [0, 1, 1, 0]], [1, 2], 3),
+    # the all-points cluster appears first, so the filtration is maxed out
+    # immediately and construction can stop early
+    "coarse_first": ([[0, 0, 0], [0, 1, 2], [0, 1, 1]], [1, 2, 3], 3),
+    # later communities are subsets of earlier ones and can be skipped
+    "fine_after_coarse": (
+        [[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 2, 3]],
+        [1, 2, 3],
+        3,
+    ),
 }
 
 
@@ -133,6 +144,21 @@ def test_toy_example_matches_paper(method):
     )
     np.testing.assert_allclose(dgms[1], np.array([[4.0, 5.0]]))
     assert dgms[2].size == 0
+
+
+def test_standard_filtration_maxes_out():
+    """Once the all-points cluster has appeared, the standard filtration
+    equals the max_dim-skeleton of the full simplex and later partitions add
+    nothing."""
+    partitions = [[0, 0, 0, 0, 0], [0, 1, 2, 3, 4], [0, 0, 1, 1, 2]]
+    mcf = build_mcf("standard", partitions, [1, 2, 3], max_dim=3)
+    n_points = 5
+    skeleton_size = sum(math.comb(n_points, d) for d in range(1, 5))
+    assert mcf.n_simplices == skeleton_size
+
+    # for max_dim >= number of points the filtration is the full power set
+    mcf = build_mcf("standard", [[0, 0, 0]], [1], max_dim=3)
+    assert mcf.n_simplices == 2**3 - 1
 
 
 @pytest.mark.parametrize("method", ["standard", "nerve"])
