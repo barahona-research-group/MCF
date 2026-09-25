@@ -313,9 +313,9 @@ class MultiscaleClusteringFiltration:
             )
             self.persistence.append(persistence_diagram)
 
-    def plot_pd(self, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
+    def plot_pd(self, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False, figsize=None):
         """Plot MCF persistence diagram."""
-        return plot_pd(self, alpha, marker_size, scale_label, flipped)
+        return plot_pd(self, alpha, marker_size, scale_label, flipped, figsize)
 
     def plot_sankey(self, step=1, color=True, alpha=0.5, pad=0.1, thickness=1):
         """Plot Sankey diagram of partitions."""

@@ -3,6 +3,7 @@
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import MaxNLocator
 
 
 def plot_sankey(
@@ -107,7 +108,7 @@ def plot_sankey(
     return fig
 
 
-def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
+def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False, figsize=None):
     """
     Code is a modified version of the GUDHI's plot_persistence_diagram.
 
@@ -124,11 +125,17 @@ def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
     delta = 0.1 * abs(tmax - tmin)
     infinity = tmax + delta
 
-    # font size
-    plt.rcParams.update({"font.size": 20})
+    # format ticks as integers if all filtration scales are integers
+    integer_scales = np.all(np.mod(np.asarray(mcf.filtration_indices), 1) == 0)
+    tick_format = "%d" if integer_scales else "%.2f"
+
+    # # font size
+    # plt.rcParams.update({"font.size": 20})
 
     # create axis
-    fig, ax = plt.subplots(1, figsize=(8.4, 7) if flipped else (8, 7))
+    if figsize is None:
+        figsize=(8.4, 7) if flipped else (8, 7)
+    fig, ax = plt.subplots(1, figsize=figsize)
 
     # define colormap
     colormap = plt.cm.Set1.colors
@@ -206,12 +213,17 @@ def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
             ylim=(tmin, infinity + 0.5 * delta),
         )
 
+    # restrict ticks to integer positions for integer filtration scales
+    if integer_scales:
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
     if flipped:
         # Infinity and x-axis label
         xt = ax.get_xticks()
         xt = xt[np.where(xt <= tmax)]  # to avoid ploting ticklabel higher than infinity
         xt = np.append(xt, infinity)
-        xtl = ["%.2f" % e for e in xt]  # to avoid float precision error
+        xtl = [tick_format % e for e in xt]  # to avoid float precision error
         xtl[-1] = r"$+\infty$"
         ax.set_xticks(xt)
         ax.set_xticklabels(xtl)
@@ -224,7 +236,7 @@ def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
         yt = ax.get_yticks()
         yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
         yt = np.append(yt, infinity)
-        ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
+        ytl = [tick_format % e for e in yt]  # to avoid float precision error
         ytl[-1] = r"$+\infty$"
         ax.set_yticks(yt)
         ax.set_yticklabels(ytl)
@@ -235,10 +247,14 @@ def plot_pd(mcf, alpha=0.5, marker_size=None, scale_label="$t$", flipped=False):
 
     ax.legend(loc=2 if flipped else 4)
 
+    plt.tight_layout()
+
     return fig, ax
 
 
-def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=False):
+
+
+def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, scale_label="$t$", flipped=False, figsize=None, marker_size=None, ticks=None):
     """Code to plot ensemble PD. Modified from GUDHI.
 
     Args:
@@ -260,11 +276,17 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=
     delta = 0.1 * abs(tmax - tmin)
     infinity = tmax + delta
 
-    # font size
-    plt.rcParams.update({"font.size": 20})
+    # format ticks as integers if all filtration scales are integers
+    integer_scales = np.all(np.mod(np.asarray(log_times), 1) == 0)
+    tick_format = "%d" if integer_scales else "%.2f"
+
+    # # font size
+    # plt.rcParams.update({"font.size": 20})
 
     # create axis
-    fig, ax = plt.subplots(1, figsize=(8.4, 7) if flipped else (8, 7))
+    if figsize is None:
+        figsize = (8.4, 7) if flipped else (8, 7)
+    fig, ax = plt.subplots(1, figsize=figsize)
 
     # define colormap
     colormap = plt.cm.Set1.colors
@@ -303,6 +325,7 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=
                         color=colormap[dim],
                         alpha=alpha,
                         label=f"$H_{dim}$",
+                        s=marker_size
                     )
                 else:
                     ax.scatter(
@@ -310,6 +333,7 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=
                         y,
                         color=colormap[dim],
                         alpha=alpha,
+                        s=marker_size
                     )
 
     # plot top line
@@ -338,25 +362,33 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=
     # labels and axes limits
     if flipped:
         ax.set(
-            xlabel="Death",
-            ylabel="Birth",
+            xlabel=f"{scale_label} [Death]",
+            ylabel=f"{scale_label} [Birth]",
             xlim=(tmin, infinity + 0.5 * delta),
             ylim=(tmin - 0.5 * delta, tmax),
         )
     else:
         ax.set(
-            xlabel="Birth",
-            ylabel="Death",
+            xlabel=f"{scale_label} [Death]",
+            ylabel=f"{scale_label} [Birth]",
             xlim=(tmin - 0.5 * delta, tmax),
             ylim=(tmin, infinity + 0.5 * delta),
         )
+
+    # restrict ticks to integer positions for integer filtration scales
+    if ticks is not None:
+        ax.set_xticks(np.asarray(ticks, dtype=float))
+        ax.set_yticks(np.asarray(ticks, dtype=float))
+    elif integer_scales:
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     if flipped:
         # Infinity and x-axis label
         xt = ax.get_xticks()
         xt = xt[np.where(xt <= tmax)]  # to avoid ploting ticklabel higher than infinity
         xt = np.append(xt, infinity)
-        xtl = ["%.2f" % e for e in xt]  # to avoid float precision error
+        xtl = [tick_format % e for e in xt]  # to avoid float precision error
         xtl[-1] = r"$+\infty$"
         ax.set_xticks(xt)
         ax.set_xticklabels(xtl)
@@ -369,7 +401,7 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=
         yt = ax.get_yticks()
         yt = yt[np.where(yt <= tmax)]  # to avoid ploting ticklabel higher than infinity
         yt = np.append(yt, infinity)
-        ytl = ["%.2f" % e for e in yt]  # to avoid float precision error
+        ytl = [tick_format % e for e in yt]  # to avoid float precision error
         ytl[-1] = r"$+\infty$"
         ax.set_yticks(yt)
         ax.set_yticklabels(ytl)
@@ -393,5 +425,5 @@ def plot_ensemble_pd(all_persistences, log_times, max_dim=2, alpha=0.1, flipped=
             )
         )
     plt.legend(handles=legend, loc=2 if flipped else 4, facecolor="white", framealpha=1)
-
+    plt.tight_layout()
     return fig, ax
